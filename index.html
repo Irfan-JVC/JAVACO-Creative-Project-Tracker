@@ -828,9 +828,27 @@ function signOut(){
 // ═══════════════════════════════════════════════
 // GOOGLE SHEETS API
 // ═══════════════════════════════════════════════
+async function ensureToken(){
+  // Google OAuth token expires in 1hr — silently refresh if needed
+  if(!accessToken){
+    return new Promise((resolve,reject)=>{
+      if(!tokenClient){initGoogleAuth();}
+      const origCb=tokenClient.callback;
+      tokenClient.callback=(resp)=>{
+        if(resp.error){reject(new Error('Token refresh failed'));return;}
+        accessToken=resp.access_token;
+        tokenClient.callback=origCb;
+        resolve();
+      };
+      tokenClient.requestAccessToken({prompt:''});
+    });
+  }
+}
+
 async function sheetsRead(sheetName){
   const url=`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(sheetName)}!A2:Z`;
-  const r=await fetch(url,{headers:{'Authorization':'Bearer '+accessToken}});
+  let r=await fetch(url,{headers:{'Authorization':'Bearer '+accessToken}});
+  if(r.status===401){await ensureToken();r=await fetch(url,{headers:{'Authorization':'Bearer '+accessToken}});}
   if(!r.ok)throw new Error('Sheets read error: '+r.status);
   const data=await r.json();
   return data.values||[];
@@ -838,8 +856,9 @@ async function sheetsRead(sheetName){
 
 async function sheetsAppend(sheetName,rows){
   const url=`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(sheetName)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
-  const r=await fetch(url,{method:'POST',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:rows})});
-  if(!r.ok)throw new Error('Sheets append error: '+r.status);
+  let r=await fetch(url,{method:'POST',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:rows})});
+  if(r.status===401){await ensureToken();r=await fetch(url,{method:'POST',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:rows})});}
+  if(!r.ok)throw new Error('Sheets append error: '+r.status+' '+await r.text());
   return r.json();
 }
 
@@ -882,7 +901,8 @@ async function driveUploadFile(file,projectName){
 
 async function getOrCreateDriveFolder(projectName){
   // Search for existing folder
-  const q=`name='${projectName}' and '${CONFIG.DRIVE_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  const safeName=projectName.replace(/'/g,"\\'")||'Unnamed';
+  const q=`name='${safeName}' and '${CONFIG.DRIVE_FOLDER_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
   const searchUrl=`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)`;
   const r=await fetch(searchUrl,{headers:{'Authorization':'Bearer '+accessToken}});
   const data=await r.json();
@@ -1155,6 +1175,9 @@ async function deleteUser(userId,email){
     showLoading('Menghapus user...');
     const rows=await sheetsRead('Users');
     const idx=rows.findIndex(r=>r[0]===userId);
+    // idx is 0-based in array (row 2 in sheet), sheetsDeleteRow needs 1-based sheet row
+    // sheet row = idx + 2 (header is row 1), but sheetsDeleteRow startIndex is 0-based
+    // startIndex = idx + 1 (skip header row 0)
     if(idx>=0)await sheetsDeleteRow('Users',idx+1);
     hideLoading();
     renderSettings();
@@ -1269,7 +1292,7 @@ async function appendLog(projectId,projectName,status,progress,desc,notes){
 // ═══════════════════════════════════════════════
 function openDetail(id){
   const p=allProjects.find(x=>x.id===id)||projects.find(x=>x.id===id);if(!p)return;
-  window._detailPid=id;window._detailP=p;_upFiles=[];
+  window._detail={id,name:p.name,status:p.status,progress:p.progress};_upFiles=[];
   document.getElementById('dp-ttl').textContent=p.name;
   const dLeft=dl(p.due);let dlTxt='';
   if(dLeft!==null){if(dLeft<0)dlTxt=`<span style="color:var(--red);font-weight:700">Overdue ${Math.abs(dLeft)} hari</span>`;else if(dLeft<=3)dlTxt=`<span style="color:var(--red)">Sisa ${dLeft} hari ⚠</span>`;else if(dLeft<=7)dlTxt=`<span style="color:var(--orange)">Sisa ${dLeft} hari</span>`;}
@@ -1302,7 +1325,7 @@ function openDetail(id){
       <div class="dp-sec-title">Deskripsi Project</div>
       <p style="font-size:11px;color:var(--text3);margin-bottom:8px">Brief atau keterangan tetap tentang project ini.</p>
       <textarea class="form-textarea" id="dp-notes-ta" style="min-height:80px;font-size:13px">${p.notes||''}</textarea>
-      <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="saveDesc('${id}')">Simpan Deskripsi</button>
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="saveDesc()">Simpan Deskripsi</button>
     </div>
     <div style="margin-bottom:22px">
       <div class="dp-sec-title">Dokumen & Foto Project <span id="dp-fc-lbl" style="font-weight:400;color:var(--text3);font-size:12px"></span></div>
@@ -1312,7 +1335,7 @@ function openDetail(id){
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text3)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <p>Upload dokumen atau foto ke Google Drive</p><small>JPG, PNG, PDF — tersimpan di Drive kamu</small>
       </div>
-      <input type="file" id="dp-fi" multiple accept=".jpg,.jpeg,.png,.pdf,.docx,.xlsx" style="display:none" onchange="upRefFiles(event,'${id}','${p.name}')">
+      <input type="file" id="dp-fi" multiple accept=".jpg,.jpeg,.png,.pdf,.docx,.xlsx" style="display:none" onchange="upRefFiles(event)">
     </div>
     <div style="margin-bottom:22px">
       <div class="dp-sec-title">Update Log</div>
@@ -1323,17 +1346,17 @@ function openDetail(id){
           <button onclick="document.getElementById('dp-attach-fi').click()" style="background:var(--surface3);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:6px 11px;cursor:pointer;font-size:12px;color:var(--text3);font-family:'League Spartan',sans-serif;display:flex;align-items:center;gap:6px;transition:all .15s" onmouseover="this.style.borderColor='rgba(205,222,0,.4)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='';this.style.color='var(--text3)'">
             📎 Lampirkan File
           </button>
-          <input type="file" id="dp-attach-fi" multiple accept=".jpg,.jpeg,.png,.pdf,.docx" style="display:none" onchange="addAttachFiles(event,'${p.name}')">
+          <input type="file" id="dp-attach-fi" multiple accept=".jpg,.jpeg,.png,.pdf,.docx" style="display:none" onchange="addAttachFiles(event)">
           <span id="dp-attach-count" style="font-size:11px;color:var(--text3)"></span>
         </div>
         <div id="dp-attach-preview" class="attach-preview"></div>
-        <button class="btn btn-accent btn-sm" onclick="saveUpdateEntry('${id}','${p.name}')" style="width:100%;justify-content:center">💾 Simpan Catatan & Lampiran</button>
+        <button class="btn btn-accent btn-sm" onclick="saveUpdateEntry()" style="width:100%;justify-content:center">💾 Simpan Catatan & Lampiran</button>
       </div>
       <div id="dp-update-list"></div>
     </div>
     <div style="display:flex;gap:8px;padding-top:14px;border-top:1px solid var(--border)">
-      <button class="btn btn-ghost" onclick="oEdit('${id}');cDetail()" style="flex:1;justify-content:center">Edit Project</button>
-      ${canDelete(p)?`<button class="btn btn-danger" onclick="delP('${id}');cDetail()">Hapus</button>`:''}
+      <button class="btn btn-ghost" onclick="oEdit(window._detail.id);cDetail()" style="flex:1;justify-content:center">Edit Project</button>
+      ${canDelete(p)?`<button class="btn btn-danger" onclick="delP(window._detail.id);cDetail()">Hapus</button>`:''}
     </div>`;
   loadDetailFiles(id,p.name);
   loadUpdateEntries(id);
@@ -1357,7 +1380,8 @@ async function loadDetailFiles(projectId,projectName){
   }catch(e){console.warn('Load files error:',e);}
 }
 
-async function upRefFiles(e,projectId,projectName){
+async function upRefFiles(e){
+  const projectId=window._detail?.id||'';const projectName=window._detail?.name||'Unknown';
   const files=[...e.target.files];
   for(const f of files){
     showLoading(`Mengupload ${f.name} ke Google Drive...`);
@@ -1417,7 +1441,8 @@ async function loadUpdateEntries(projectId){
   }catch(e){console.warn('Load updates error:',e);}
 }
 
-async function addAttachFiles(e,projectName){
+async function addAttachFiles(e){
+  const projectName=window._detail?.name||'Unknown';
   const files=[...e.target.files];
   for(const f of files){
     if(_upFiles.length>=5){alert('Maks 5 file per update.');break;}
@@ -1444,7 +1469,8 @@ function renderAttachPreview(){
   </div>`).join('');
 }
 
-async function saveUpdateEntry(projectId,projectName){
+async function saveUpdateEntry(){
+  const projectId=window._detail?.id||'';const projectName=window._detail?.name||'Unknown';
   const txt=document.getElementById('dp-update-txt')?.value.trim()||'';
   if(!txt&&!_upFiles.length){alert('Tulis catatan atau lampirkan file terlebih dahulu.');return;}
   const n=ts();
@@ -1457,7 +1483,9 @@ async function saveUpdateEntry(projectId,projectName){
     const pRows=await sheetsRead('Projects');
     const pIdx=pRows.findIndex(r=>r[0]===projectId);
     if(pIdx>=0){pRows[pIdx][9]=n;await sheetsUpdate('Projects',pIdx+1,pRows[pIdx]);}
-    await appendLog(projectId,projectName,window._detailP?.status||'',window._detailP?.progress+'%'||'',txt||`Melampirkan ${_upFiles.length} file`,_upFiles.length?`${_upFiles.length} file dilampirkan`:'');
+    const curStatus=window._detail?.status||'';
+    const curProgress=window._detail?.progress||0;
+    await appendLog(projectId,projectName,curStatus,curProgress+'%',txt||`Melampirkan ${_upFiles.length} file`,_upFiles.length?`${_upFiles.length} file dilampirkan`:'');
     const ta=document.getElementById('dp-update-txt');if(ta)ta.value='';
     _upFiles=[];renderAttachPreview();
     hideLoading();
@@ -1466,7 +1494,8 @@ async function saveUpdateEntry(projectId,projectName){
   }catch(e){hideLoading();showError('Gagal simpan catatan: '+e.message);}
 }
 
-async function saveDesc(id){
+async function saveDesc(){
+  const id=window._detail?.id;if(!id)return;
   const p=allProjects.find(x=>x.id===id);if(!p)return;
   const notes=document.getElementById('dp-notes-ta').value;
   showLoading('Menyimpan deskripsi...');
