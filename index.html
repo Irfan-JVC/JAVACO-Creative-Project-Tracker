@@ -856,7 +856,7 @@ async function sheetsRead(sheetName){
 }
 
 async function sheetsAppend(sheetName,rows){
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(sheetName)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(sheetName)}!A1:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
   let r=await fetch(url,{method:'POST',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:rows})});
   if(r.status===401){await ensureToken();r=await fetch(url,{method:'POST',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:rows})});}
   if(r.status===403)throw new Error('Akses ditolak (403). Pastikan Google Sheets API sudah diaktifkan di Google Cloud Console dan spreadsheet sudah di-share ke akun kamu.');
