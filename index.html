@@ -1233,10 +1233,10 @@ function projRow(p,q,showCreatedBy){
     <td>${assigneesHtml(p)}</td>
     <td style="font-size:11px;color:var(--text3);white-space:nowrap">${assignedDate}</td>
     <td style="font-size:11px;color:var(--text3);white-space:nowrap">${updatedDate}</td>
-    ${showCreatedBy?`<td style="font-size:12px;color:var(--text3)">${p.created_by||'—'}</td>`:''}
+    ${showCreatedBy?'<td style="font-size:12px;color:var(--text3)">'+( p.created_by||'—')+'</td>':''}
     <td style="white-space:nowrap" onclick="event.stopPropagation()">
       <button class="btn btn-ghost btn-sm" onclick="oEdit('${p.id}');event.stopPropagation()" style="margin-right:4px">Edit</button>
-      ${canDelete(p)?`<button class="btn btn-danger btn-sm" onclick="delP('${p.id}');event.stopPropagation()">Hapus</button>`:''}
+      ${canDelete(p)?'<button class="btn btn-danger btn-sm" onclick="delP(\''+p.id+'\');event.stopPropagation()">Hapus</button>':''}
     </td>
   </tr>`;
 }
@@ -1266,7 +1266,7 @@ function renderDashLog(){
   const el=document.getElementById('dash-log');
   const r=[...logs].reverse().slice(0,5);
   if(!r.length){el.innerHTML=`<div class="empty">Belum ada log.</div>`;return;}
-  el.innerHTML=r.map(l=>`<div class="log-item"><div class="log-dot" style="background:${dc(l.status)}"></div><div class="log-info"><div class="log-meta"><span class="log-name">${l.project}</span>${sb(l.status)}<span class="log-time">${l.time}</span>${l.created_by?`<span style="font-size:11px;color:var(--text3)">${l.created_by}</span>`:''}</div><div class="log-desc">${l.desc}</div></div></div>`).join('');
+  el.innerHTML=r.map(l=>`<div class="log-item"><div class="log-dot" style="background:${dc(l.status)}"></div><div class="log-info"><div class="log-meta"><span class="log-name">${l.project}</span>${sb(l.status)}<span class="log-time">${l.time}</span>${l.created_by?'<span style="font-size:11px;color:var(--text3)">'+( l.created_by )+'</span>':''}</div><div class="log-desc">${l.desc}</div></div></div>`).join('');
 }
 
 function renderMyProjects(){
@@ -1301,7 +1301,7 @@ function renderLog(){
   const fil=logFilter==='all'?logs:logs.filter(l=>l.status===logFilter);
   if(sub)sub.textContent=`${logs.length} total entries`;
   if(!fil.length){el.innerHTML=`<div class="empty">Belum ada log.</div>`;return;}
-  el.innerHTML=[...fil].reverse().map(l=>`<div class="log-item"><div class="log-dot" style="background:${dc(l.status)}"></div><div class="log-info"><div class="log-meta"><span class="log-name">${l.project}</span>${sb(l.status)}<span class="badge s-notstart" style="font-size:10px">${l.progress}</span>${l.created_by?`<span style="font-size:11px;color:var(--text3);background:rgba(255,255,255,.06);padding:2px 8px;border-radius:10px">${l.created_by}</span>`:''}<span class="log-time">${l.time}</span></div><div class="log-desc">${l.desc}</div>${l.notes?`<div class="log-note" style="font-size:11px;color:rgba(205,222,0,.5);margin-top:3px;font-style:italic">${l.notes}</div>`:''}</div></div>`).join('');
+  el.innerHTML=[...fil].reverse().map(l=>`<div class="log-item"><div class="log-dot" style="background:${dc(l.status)}"></div><div class="log-info"><div class="log-meta"><span class="log-name">${l.project}</span>${sb(l.status)}<span class="badge s-notstart" style="font-size:10px">${l.progress}</span>${l.created_by?'<span style="font-size:11px;color:var(--text3);background:rgba(255,255,255,.06);padding:2px 8px;border-radius:10px">'+( l.created_by )+'</span>':''}<span class="log-time">${l.time}</span></div><div class="log-desc">${l.desc}</div>${l.notes?'<div class="log-note" style="font-size:11px;color:rgba(205,222,0,.5);margin-top:3px;font-style:italic">'+l.notes+'</div>':''}</div></div>`).join('');
 }
 
 function renderReport(){
@@ -1550,7 +1550,7 @@ function openDetail(id){
       <div class="dp-meta" style="border-radius:var(--radius-sm);padding:11px 13px">
         <div class="dp-meta-lbl">Assignees</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
-          ${assigned.map(e=>`<div style="display:flex;align-items:center;gap:6px;background:var(--surface3);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;color:var(--text2)">${avatarHtml(e,e,18)} ${e}</div>`).join('')||'<span style="font-size:12px;color:var(--text3)">Belum ada assignee</span>'}
+          ${assigned.map(e=>'<div style="display:flex;align-items:center;gap:6px;background:var(--surface3);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;color:var(--text2)">'+( avatarHtml(e,e,18) )+' '+( e )+'</div>').join('')||'<span style="font-size:12px;color:var(--text3)">Belum ada assignee</span>'}
         </div>
       </div>
     </div>
@@ -1596,7 +1596,7 @@ function openDetail(id){
     </div>
     <div style="display:flex;gap:8px;padding-top:14px;border-top:1px solid var(--border)">
       <button class="btn btn-ghost" onclick="oEdit(window._detail.id);cDetail()" style="flex:1;justify-content:center">Edit Project</button>
-      ${canDelete(p)?`<button class="btn btn-danger" onclick="delP(window._detail.id);cDetail()">Hapus</button>`:''}
+      ${canDelete(p)?'<button class="btn btn-danger" onclick="delP(window._detail.id);cDetail()">Hapus</button>':''}
     </div>`;
   loadDetailFiles(id,p.name);
   loadUpdateEntries(id);
@@ -1743,17 +1743,17 @@ async function loadUpdateEntries(projectId){
     el.innerHTML=all.map(e=>{
       const isM=e._type==='manual';
       const hasF=e.files&&e.files.length>0;
-      const thumbsHtml=hasF?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${e.files.map(f=>`<div onclick="viewDriveFile('${f.url}','${f.name}','${f.mime}','','${f.drive_id||''}')" style="cursor:pointer;border-radius:6px;overflow:hidden;width:60px;height:60px;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center" title="${f.name}"><span style="font-size:24px">${fi(f.mime)}</span></div>`).join('')}</div>`:'';
+      const thumbsHtml=hasF?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${e.files.map(f=>'<div onclick="viewDriveFile(''+( f.url )+'',''+( f.name )+'',''+( f.mime )+'','',''+( f.drive_id||'' )+'')" style="cursor:pointer;border-radius:6px;overflow:hidden;width:60px;height:60px;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center" title="'+( f.name )+'"><span style="font-size:24px">'+( fi(f.mime) )+'</span></div>').join('')}</div>`:'';
       return `<div style="display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);align-items:flex-start">
         <div style="width:7px;height:7px;border-radius:50%;background:${isM?'var(--accent)':'var(--text3)'};margin-top:5px;flex-shrink:0"></div>
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap">
             <span style="font-size:11px;color:var(--text3)">${e.time}</span>
-            ${e.created_by?`<span style="font-size:10px;color:var(--text3);background:rgba(255,255,255,.06);padding:2px 7px;border-radius:10px">${e.created_by}</span>`:''}
+            ${e.created_by?'<span style="font-size:10px;color:var(--text3);background:rgba(255,255,255,.06);padding:2px 7px;border-radius:10px">'+( e.created_by )+'</span>':''}
             ${!isM&&e.status?sb(e.status):''}
-            ${hasF?`<span style="font-size:10px;background:rgba(205,222,0,.12);color:var(--accent);padding:2px 7px;border-radius:10px;border:1px solid rgba(205,222,0,.25)">${e.files.length} file</span>`:''}
+            ${hasF?'<span style="font-size:10px;background:rgba(205,222,0,.12);color:var(--accent);padding:2px 7px;border-radius:10px;border:1px solid rgba(205,222,0,.25)">'+( e.files.length )+' file</span>':''}
           </div>
-          ${e.text?`<div style="font-size:13px;color:var(--text2);line-height:1.65">${e.text}</div>`:''}
+          ${e.text?'<div style="font-size:13px;color:var(--text2);line-height:1.65">'+( e.text )+'</div>':''}
           ${thumbsHtml}
         </div>
       </div>`;
@@ -1893,7 +1893,7 @@ async function runAI(){
       <div class="res-row"><span class="res-key">Status</span><span class="res-val">${sb(parsed.status)}</span></div>
       <div class="res-row"><span class="res-key">Progress</span><span class="res-val">${parsed.progress}%</span></div>
       <div class="res-row"><span class="res-key">Ringkasan</span><span class="res-val">${parsed.ringkasan}</span></div>
-      <div class="res-row"><span class="res-key">Action Items</span><span class="res-val">${(parsed.action_items||[]).map(a=>`• ${a}`).join('<br>')}</span></div>
+      <div class="res-row"><span class="res-key">Action Items</span><span class="res-val">${(parsed.action_items||[]).map(a=>'• '+( a )+'').join('<br>')}</span></div>
       <button class="save-log-btn" onclick="applyLog('${dp}',${JSON.stringify(parsed).replace(/"/g,'&quot;')})">✓ Simpan ke Update Log</button>`;
     res.classList.add('show');cp.style.display='flex';
     window._aiParsed=parsed;window._aiProj=dp;
@@ -1940,7 +1940,7 @@ async function runUpAI(){
       else{fileTexts.push(`[File: ${f.name}]
 ${f.data.substring(0,2000)}`);}
     }
-    const prompt=`Kamu adalah AI assistant project tracker JAVAFON & JAVACO. Baca konten file berikut dan identifikasi detail project. ${extra?`Instruksi: ${extra}.`:''} Kategori tersedia: ${cats}. Balas HANYA dengan JSON valid tanpa teks lain: {"name":"<nama project>","cat":"<pilih dari kategori>","status":"Not Started","prio":"<Low/Medium/High/Critical>","due":"<YYYY-MM-DD atau kosong>","notes":"<deskripsi>","action_items":["<item>"],"summary":"<ringkasan>"}
+    const prompt=`Kamu adalah AI assistant project tracker JAVAFON & JAVACO. Baca konten file berikut dan identifikasi detail project. ${extra?'Instruksi: '+( extra )+'.':''} Kategori tersedia: ${cats}. Balas HANYA dengan JSON valid tanpa teks lain: {"name":"<nama project>","cat":"<pilih dari kategori>","status":"Not Started","prio":"<Low/Medium/High/Critical>","due":"<YYYY-MM-DD atau kosong>","notes":"<deskripsi>","action_items":["<item>"],"summary":"<ringkasan>"}
 
 Konten file:
 ${fileTexts.join('
