@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JAVACO Creative Project Tracker</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CiAgPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTIiIGZpbGw9IiMyNjNkM2YiLz4KICA8dGV4dCB4PSIzMiIgeT0iMjYiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIiBmb250LXNpemU9IjE2IiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgbGV0dGVyLXNwYWNpbmc9Ii0xIj5KQVZBPC90ZXh0PgogIDxyZWN0IHg9IjM4IiB5PSIzMiIgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiByeD0iMyIgZmlsbD0iI2NkZGUwMCIvPgogIDx0ZXh0IHg9IjQ4IiB5PSI0MiIgZm9udC1mYW1pbHk9IkFyaWFsIEJsYWNrLHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMyNjNkM2YiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJjZW50cmFsIj4uY288L3RleHQ+Cjwvc3ZnPg==">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Google APIs -->
@@ -318,6 +319,19 @@ tbody tr.clickable{cursor:pointer}
 .exec-count{font-size:12px;color:var(--text3)}
 .empty{padding:36px;text-align:center;color:var(--text3);font-size:13px}
 
+/* ── TOAST NOTIFICATIONS ── */
+.toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;font-family:'League Spartan',sans-serif;color:var(--text);display:flex;align-items:flex-start;gap:10px;min-width:280px;max-width:380px;box-shadow:0 4px 20px rgba(0,0,0,.4);pointer-events:all;animation:slideIn .2s ease}
+.toast.success{border-left:3px solid var(--green)}
+.toast.error{border-left:3px solid var(--red)}
+.toast.info{border-left:3px solid var(--blue)}
+.toast-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.toast-body{flex:1}
+.toast-title{font-weight:700;margin-bottom:2px;font-size:13px}
+.toast-msg{font-size:12px;color:var(--text3);line-height:1.5}
+.toast-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;padding:0;flex-shrink:0}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
 /* ── SYNC STATUS ── */
 .sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px}
 .sync-ok{background:var(--green)}.sync-err{background:var(--red)}.sync-ing{background:var(--orange);animation:pulse 1s infinite}
@@ -352,6 +366,8 @@ tbody tr.clickable{cursor:pointer}
   <p id="loading-msg">Memuat data...</p>
 </div>
 
+<!-- TOAST NOTIFICATIONS -->
+<div class="toast-container" id="toast-container"></div>
 <!-- MAIN APP -->
 <div class="app" id="main-app" style="display:none">
 
@@ -412,9 +428,7 @@ tbody tr.clickable{cursor:pointer}
       <p id="today-lbl">—</p>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
-      <div id="backup-badge" style="display:none;align-items:center;gap:6px;background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.25);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--red);cursor:pointer" onclick="showReminder()">
-        ⚠ <span id="backup-badge-txt">Belum backup</span>
-      </div>
+      
       <button class="btn btn-ghost btn-sm" onclick="openUploadModal()">⬆ Import Request</button>
       <button class="btn btn-accent" onclick="openAddModal()">+ Tambah Project</button>
     </div>
@@ -458,12 +472,19 @@ tbody tr.clickable{cursor:pointer}
       <div class="sec-hdr" style="background:var(--surface2)">
         <h3 style="font-size:12px;color:var(--text3)">Filter</h3>
         <div class="sec-hdr-r">
-          <select class="form-select" id="flt-s" onchange="renderMyProjects()" style="font-size:12px;padding:5px 10px;width:140px"><option value="">Semua Status</option><option>Not Started</option><option>In Progress</option><option>On Hold</option><option>Completed</option></select>
-          <select class="form-select" id="flt-c" onchange="renderMyProjects()" style="font-size:12px;padding:5px 10px;width:155px"><option value="">Semua Kategori</option></select>
+          <select class="form-select" id="flt-s" onchange="renderMyProjects()" style="font-size:12px;padding:5px 10px;width:130px"><option value="">Semua Status</option><option>Not Started</option><option>In Progress</option><option>On Hold</option><option>Completed</option></select>
+          <select class="form-select" id="flt-c" onchange="renderMyProjects()" style="font-size:12px;padding:5px 10px;width:145px"><option value="">Semua Kategori</option></select>
+          <select class="form-select" id="flt-sort" onchange="renderMyProjects()" style="font-size:12px;padding:5px 10px;width:155px">
+            <option value="">Urutkan Default</option>
+            <option value="assigned-desc">Assigned: Terbaru</option>
+            <option value="assigned-asc">Assigned: Terlama</option>
+            <option value="updated-desc">Update: Terbaru</option>
+            <option value="updated-asc">Update: Terlama</option>
+          </select>
         </div>
       </div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Nama Project</th><th>Kategori</th><th>Status</th><th>Prioritas</th><th>Progress</th><th>Due Date</th><th>Assignees</th><th>Aksi</th></tr></thead>
+        <thead><tr><th>Nama Project</th><th>Kategori</th><th>Status</th><th>Prioritas</th><th>Progress</th><th>Due Date</th><th>Assignees</th><th>Assigned Date</th><th>Update Terakhir</th><th>Aksi</th></tr></thead>
         <tbody id="proj-table"></tbody>
       </table></div>
     </div>
@@ -487,7 +508,7 @@ tbody tr.clickable{cursor:pointer}
         <span class="search-count" id="all-search-count"></span>
       </div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Nama Project</th><th>Kategori</th><th>Status</th><th>Prioritas</th><th>Progress</th><th>Due Date</th><th>Assignees</th><th>Dibuat oleh</th><th>Aksi</th></tr></thead>
+        <thead><tr><th>Nama Project</th><th>Kategori</th><th>Status</th><th>Prioritas</th><th>Progress</th><th>Due Date</th><th>Assignees</th><th>Assigned Date</th><th>Update Terakhir</th><th>Dibuat oleh</th><th>Aksi</th></tr></thead>
         <tbody id="all-proj-table"></tbody>
       </table></div>
     </div>
@@ -582,7 +603,7 @@ tbody tr.clickable{cursor:pointer}
           <button class="btn btn-ghost btn-sm" onclick="exportExcel()">⬇ Export Excel (saya)</button>
           <button class="btn btn-ghost btn-sm manager-only" id="export-all-btn" onclick="exportExcel(true)" style="display:none">⬇ Export Excel (semua)</button>
           <button class="btn btn-ghost btn-sm" onclick="exportJSON()">⬇ Export JSON</button>
-          <button class="btn btn-ghost btn-sm" onclick="showReminder()" style="border-color:rgba(205,222,0,.3);color:rgba(205,222,0,.8)">🔔 Test Reminder</button>
+          
         </div>
       </div>
     </div>
@@ -674,32 +695,7 @@ tbody tr.clickable{cursor:pointer}
   </div>
 </div>
 
-<!-- REMINDER -->
-<div id="reminder-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(6px)">
-  <div style="background:#2d4a4d;border:1px solid rgba(205,222,0,.3);border-radius:14px;padding:32px;width:460px;max-width:95vw;font-family:'League Spartan',sans-serif">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-      <div style="width:44px;height:44px;border-radius:50%;background:rgba(205,222,0,.15);border:1px solid rgba(205,222,0,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px">📦</div>
-      <div>
-        <div style="font-size:17px;font-weight:700;color:#fff;letter-spacing:-.4px">Waktunya Backup!</div>
-        <div style="font-size:12px;color:rgba(205,222,0,.7);margin-top:2px">Pengingat rutin setiap Jumat 17.00</div>
-      </div>
-    </div>
-    <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:14px 16px;margin:0 0 16px;border-left:3px solid #cdde00">
-      <div id="reminder-stats" style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.8"></div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <button onclick="doReminderExportAll()" style="background:#cdde00;color:#1e3133;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'League Spartan',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px">⬇ Export Excel + JSON Sekarang</button>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <button onclick="openWhatsAppReminder()" style="background:rgba(37,211,102,.15);color:#25d366;border:1px solid rgba(37,211,102,.3);border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'League Spartan',sans-serif">📱 Kirim ke WhatsApp</button>
-        <button onclick="snoozeReminder()" style="background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px;font-size:13px;font-weight:500;cursor:pointer;font-family:'League Spartan',sans-serif">Ingatkan minggu depan</button>
-      </div>
-    </div>
-    <div style="text-align:center;margin-top:14px">
-      <button onclick="closeReminder()" style="background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer;font-family:'League Spartan',sans-serif">Tutup</button>
-    </div>
-  </div>
-</div>
-
+<!-- Backup reminder removed -->
 <input type="file" id="json-import" accept=".json" style="display:none" onchange="importJSON(event)">
 <script>
 // ═══════════════════════════════════════════════
@@ -708,7 +704,7 @@ tbody tr.clickable{cursor:pointer}
 const CONFIG = {
   CLIENT_ID: '198277486051-1dut8o9um30snoeqfvg20ea0scu59bnr.apps.googleusercontent.com',
   SHEET_ID:  '1sMznqtgV_9sCuJ-cC48qdwoYjA6UAI0gcN0zj9dtBeU',
-  DRIVE_FOLDER_ID: '1lyqEUg3RACd4afSP6GlWX9xR_GZugsRM',
+  DRIVE_FOLDER_ID: '1Y0hWO6YFXvjP4iWfL4xC8wgbJpDNKiqO',
   SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
   CLAUDE_API_KEY_STORAGE: 'jj_apikey',
   CATS_KEY: 'jj_cats_v3',
@@ -747,7 +743,21 @@ function pb(p){const m={'Critical':'p-critical','High':'p-high','Medium':'p-medi
 function dc(s){return {'In Progress':'#fbbf24','Completed':'#6ee7b7','On Hold':'rgba(255,255,255,0.3)','Not Started':'#60a5fa'}[s]||'rgba(255,255,255,0.3)';}
 function prg(v,w){v=Math.min(100,Math.max(0,Number(v)||0));return `<div class="prog-wrap"><div class="prog-bg" style="width:${w||80}px"><div class="prog-fill" style="width:${v}%"></div></div><span class="prog-pct">${v}%</span></div>`;}
 function fi(t){if(t&&t.startsWith('image/'))return '🖼️';if(t&&t.includes('pdf'))return '📄';if(t&&(t.includes('sheet')||t.includes('excel')))return '📊';if(t&&(t.includes('word')||t.includes('docx')))return '📝';return '📁';}
-function avatarHtml(email,name,size){const initials=(name||email||'?').charAt(0).toUpperCase();const col=CC[email.charCodeAt(0)%CC.length];return `<div style="width:${size||22}px;height:${size||22}px;border-radius:50%;background:${col}22;border:1px solid ${col}55;display:inline-flex;align-items:center;justify-content:center;font-size:${Math.round((size||22)*0.45)}px;font-weight:700;color:${col};flex-shrink:0">${initials}</div>`;}
+function avatarHtml(email,name,size){
+  const n=name||email||'?';
+  // Get up to 3 letters: first 3 chars of name or initials from words
+  const words=n.trim().split(/\s+/);
+  let initials='';
+  if(words.length>=2){
+    // First letter of first + last word, + first letter of middle if exists
+    initials=(words[0][0]+(words.length>2?words[1][0]:'')+(words[words.length-1][0])).toUpperCase();
+  }else{
+    initials=n.substring(0,3).toUpperCase();
+  }
+  const col=CC[email.charCodeAt(0)%CC.length];
+  const fs=initials.length>2?Math.round((size||22)*0.32):Math.round((size||22)*0.38);
+  return `<div style="width:${size||22}px;height:${size||22}px;border-radius:50%;background:${col}22;border:1px solid ${col}55;display:inline-flex;align-items:center;justify-content:center;font-size:${fs}px;font-weight:700;color:${col};flex-shrink:0;letter-spacing:-0.5px">${initials}</div>`;
+}
 function assigneesHtml(p){const list=p.assigned_to?p.assigned_to.split(',').filter(e=>e.trim()):[];if(!list.length)return `<span style="font-size:12px;color:var(--text3)">${p.created_by||'—'}</span>`;return list.map(e=>`<span title="${e.trim()}">${avatarHtml(e.trim(),e.trim(),22)}</span>`).join('');}
 function hilite(txt,q){if(!q||!txt)return txt||'';const re=new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');return String(txt).replace(re,'<mark style="background:rgba(205,222,0,.35);color:var(--text);border-radius:2px;padding:0 1px">$1</mark>');}
 
@@ -956,7 +966,7 @@ async function loadAllData(){
     setSyncStatus('ok');
     renderAll();
     localStorage.setItem('jj_last_sync',new Date().toISOString());
-    setTimeout(checkFridayReminder,3000);
+    // Friday reminder disabled
   }catch(e){
     hideLoading();
     setSyncStatus('err');
@@ -1010,6 +1020,9 @@ function projRow(p,q,showCreatedBy){
   const dLeft=dl(p.due);
   let dlTxt='';
   if(dLeft!==null&&p.status!=='Completed'){if(dLeft<0)dlTxt=`<span class="badge p-critical" style="margin-left:4px;font-size:10px">Overdue</span>`;else if(dLeft<=3)dlTxt=`<span class="badge p-high" style="margin-left:4px;font-size:10px">${dLeft}h lagi</span>`;}
+  // Assigned date = created_at, Updated date = updated
+  const assignedDate=p.created_at?fd(p.created_at.substring(0,10)):fd(p.created_at)||'—';
+  const updatedDate=p.updated?p.updated.substring(0,12):'—';
   return `<tr class="clickable ${od(p)?'row-overdue':''}" onclick="openDetail('${p.id}')">
     <td><span style="font-weight:700;color:var(--text)">${hilite(p.name,q)}</span>${dlTxt}</td>
     <td><span style="font-size:12px">${hilite(p.cat,q)}</span></td>
@@ -1017,6 +1030,8 @@ function projRow(p,q,showCreatedBy){
     <td>${prg(p.progress)}</td>
     <td style="font-size:12px;white-space:nowrap">${fd(p.due)}</td>
     <td>${assigneesHtml(p)}</td>
+    <td style="font-size:11px;color:var(--text3);white-space:nowrap">${assignedDate}</td>
+    <td style="font-size:11px;color:var(--text3);white-space:nowrap">${updatedDate}</td>
     ${showCreatedBy?`<td style="font-size:12px;color:var(--text3)">${p.created_by||'—'}</td>`:''}
     <td style="white-space:nowrap" onclick="event.stopPropagation()">
       <button class="btn btn-ghost btn-sm" onclick="oEdit('${p.id}');event.stopPropagation()" style="margin-right:4px">Edit</button>
@@ -1058,7 +1073,13 @@ function renderMyProjects(){
   const q=(document.getElementById('proj-search')?.value||'').toLowerCase().trim();
   const fs=document.getElementById('flt-s')?.value||'';
   const fc=document.getElementById('flt-c')?.value||'';
+  const fsort=document.getElementById('flt-sort')?.value||'';
   let list=projects.filter(p=>(!fs||p.status===fs)&&(!fc||p.cat===fc)&&(!q||(p.name.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)||(p.pic||'').toLowerCase().includes(q))));
+  // Sort
+  if(fsort==='assigned-desc')list.sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+  else if(fsort==='assigned-asc')list.sort((a,b)=>(a.created_at||'').localeCompare(b.created_at||''));
+  else if(fsort==='updated-desc')list.sort((a,b)=>(b.updated||'').localeCompare(a.updated||''));
+  else if(fsort==='updated-asc')list.sort((a,b)=>(a.updated||'').localeCompare(b.updated||''));
   const sc=document.getElementById('search-count');if(sc)sc.textContent=`${list.length} project`;
   if(!list.length){tb.innerHTML=`<tr><td colspan="8" class="empty">Tidak ada project.</td></tr>`;return;}
   tb.innerHTML=list.map(p=>projRow(p,q,false)).join('');
@@ -1282,6 +1303,7 @@ async function saveProjF(){
     }
     cModal('proj-modal');
     await loadAllData();
+    showSuccess(editId?'Project berhasil diupdate!':'Project baru berhasil ditambahkan!');
   }catch(e){hideLoading();showError('Gagal menyimpan: '+e.message);}
 }
 
@@ -1389,8 +1411,8 @@ async function loadDetailFiles(projectId,projectName){
     if(!files.length){fg.innerHTML='';return;}
     fg.innerHTML=files.map(f=>{
       const isImg=f.mime&&f.mime.startsWith('image/');
-      return `<div class="file-item" onclick="viewDriveFile('${f.drive_url}','${f.name}','${f.mime}','${f.thumb_url}')">
-        <div class="file-thumb">${isImg&&f.thumb_url?`<img src="${f.thumb_url}" alt="${f.name}">`:`<span class="fi">${fi(f.mime)}</span>`}</div>
+      return `<div class="file-item" onclick="viewDriveFile('${f.drive_url}','${f.name}','${f.mime}','${f.thumb_url}','${f.drive_id}')">
+        <div class="file-thumb"><span class="fi" style="font-size:28px">${isImg?'🖼️':fi(f.mime)}</span></div>
         <div class="file-name">${f.name}</div>
       </div>`;
     }).join('');
@@ -1412,20 +1434,70 @@ async function upRefFiles(e){
   }
   hideLoading();
   loadDetailFiles(projectId,projectName);
+  showSuccess(`File berhasil diupload ke Google Drive!`);
   e.target.value='';
 }
 
-function viewDriveFile(url,name,mime,thumb){
+async function viewDriveFile(url,name,mime,thumb,driveId){
   document.getElementById('v-name').textContent=name;
   const body=document.getElementById('v-body');
-  if(mime&&mime.startsWith('image/')&&thumb){
-    body.innerHTML=`<div style="text-align:center"><img src="${thumb}" alt="${name}" style="max-width:100%;border-radius:4px;margin-bottom:12px"><br><a href="${url}" target="_blank" class="btn btn-ghost btn-sm" style="display:inline-flex">Buka di Google Drive ↗</a></div>`;
-  }else if(mime&&mime.includes('pdf')){
-    body.innerHTML=`<div style="text-align:center"><div style="font-size:48px;margin-bottom:12px">📄</div><p style="font-size:14px;color:var(--text2);margin-bottom:12px">${name}</p><a href="${url}" target="_blank" class="btn btn-accent btn-sm" style="display:inline-flex">Buka / Download di Drive ↗</a></div>`;
-  }else{
-    body.innerHTML=`<div style="text-align:center"><div style="font-size:48px;margin-bottom:12px">${fi(mime)}</div><p style="font-size:14px;color:var(--text2);margin-bottom:12px">${name}</p><a href="${url}" target="_blank" class="btn btn-accent btn-sm" style="display:inline-flex">Buka di Google Drive ↗</a></div>`;
-  }
   document.getElementById('viewer').classList.add('open');
+
+  if(mime&&mime.startsWith('image/')){
+    // Show loading first
+    body.innerHTML=`<div style="text-align:center;color:var(--text3)">
+      <div class="spinner-lg" style="margin:0 auto 12px"></div>
+      <p style="font-size:13px">Memuat gambar...</p>
+    </div>`;
+    try{
+      // Fetch image with OAuth token - this is the key fix
+      const imgId=driveId||extractDriveId(url);
+      if(imgId&&accessToken){
+        const r=await fetch(`https://www.googleapis.com/drive/v3/files/${imgId}?alt=media`,{
+          headers:{'Authorization':'Bearer '+accessToken}
+        });
+        if(r.ok){
+          const blob=await r.blob();
+          const objUrl=URL.createObjectURL(blob);
+          body.innerHTML=`<div style="text-align:center">
+            <img src="${objUrl}" alt="${name}" style="max-width:100%;max-height:70vh;border-radius:6px;margin-bottom:14px">
+            <br><a href="${url}" target="_blank" class="btn btn-ghost btn-sm" style="display:inline-flex;margin-top:4px">Buka di Google Drive ↗</a>
+          </div>`;
+          return;
+        }
+      }
+      // Fallback if fetch fails
+      body.innerHTML=`<div style="text-align:center">
+        <div style="font-size:48px;margin-bottom:12px">🖼️</div>
+        <p style="font-size:14px;color:var(--text2);margin-bottom:12px">${name}</p>
+        <a href="${url}" target="_blank" class="btn btn-accent btn-sm" style="display:inline-flex">Buka / Download di Drive ↗</a>
+      </div>`;
+    }catch(e){
+      body.innerHTML=`<div style="text-align:center">
+        <div style="font-size:48px;margin-bottom:12px">🖼️</div>
+        <p style="font-size:14px;color:var(--text2);margin-bottom:12px">${name}</p>
+        <a href="${url}" target="_blank" class="btn btn-accent btn-sm" style="display:inline-flex">Buka di Google Drive ↗</a>
+      </div>`;
+    }
+  }else if(mime&&mime.includes('pdf')){
+    body.innerHTML=`<div style="text-align:center">
+      <div style="font-size:56px;margin-bottom:14px">📄</div>
+      <p style="font-size:14px;color:var(--text2);margin-bottom:14px">${name}</p>
+      <a href="${url}" target="_blank" class="btn btn-accent btn-sm" style="display:inline-flex">Buka / Download di Drive ↗</a>
+    </div>`;
+  }else{
+    body.innerHTML=`<div style="text-align:center">
+      <div style="font-size:56px;margin-bottom:14px">${fi(mime)}</div>
+      <p style="font-size:14px;color:var(--text2);margin-bottom:14px">${name}</p>
+      <a href="${url}" target="_blank" class="btn btn-accent btn-sm" style="display:inline-flex">Buka di Google Drive ↗</a>
+    </div>`;
+  }
+}
+
+function extractDriveId(url){
+  // Extract file ID from Google Drive URL
+  const m=url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)||url.match(/id=([a-zA-Z0-9_-]+)/);
+  return m?m[1]:null;
 }
 
 // Update entries (stored in Sheets Updates tab)
@@ -1440,7 +1512,7 @@ async function loadUpdateEntries(projectId){
     el.innerHTML=all.map(e=>{
       const isM=e._type==='manual';
       const hasF=e.files&&e.files.length>0;
-      const thumbsHtml=hasF?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${e.files.map(f=>`<div onclick="viewDriveFile('${f.url}','${f.name}','${f.mime}','')" style="cursor:pointer;border-radius:6px;overflow:hidden;width:60px;height:60px;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center" title="${f.name}"><span style="font-size:24px">${fi(f.mime)}</span></div>`).join('')}</div>`:'';
+      const thumbsHtml=hasF?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${e.files.map(f=>`<div onclick="viewDriveFile('${f.url}','${f.name}','${f.mime}','','${f.drive_id||''}')" style="cursor:pointer;border-radius:6px;overflow:hidden;width:60px;height:60px;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center" title="${f.name}"><span style="font-size:24px">${fi(f.mime)}</span></div>`).join('')}</div>`:'';
       return `<div style="display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);align-items:flex-start">
         <div style="width:7px;height:7px;border-radius:50%;background:${isM?'var(--accent)':'var(--text3)'};margin-top:5px;flex-shrink:0"></div>
         <div style="flex:1">
@@ -1671,36 +1743,14 @@ function exportJSON(){
   localStorage.setItem('jj_last_export',new Date().toISOString());updateBackupBadge();
 }
 
-// ═══ REMINDER ═══
-function updateBackupBadge(){
-  const last=localStorage.getItem('jj_last_export'),badge=document.getElementById('backup-badge'),txt=document.getElementById('backup-badge-txt');
-  if(!badge)return;
-  if(!last){badge.style.display='flex';if(txt)txt.textContent='Belum pernah backup!';}
-  else{const days=Math.floor((new Date()-new Date(last))/864e5);if(days>=7){badge.style.display='flex';if(txt)txt.textContent=`Backup ${days} hari lalu`;}else badge.style.display='none';}
-}
-function showReminder(){
-  const last=localStorage.getItem('jj_last_export'),el=document.getElementById('reminder-stats');
-  if(el){let lines=[`📁 Project: <strong style="color:var(--accent)">${projects.length}</strong>`,`📝 Log: <strong style="color:var(--accent)">${logs.length}</strong>`];if(last){const d=Math.floor((new Date()-new Date(last))/864e5);lines.push(d===0?'✅ Backup hari ini!':d<7?`⚠️ Backup ${d} hari lalu`:`🔴 <strong style="color:var(--red)">Belum backup ${d} hari!</strong>`);}else lines.push('🔴 <strong style="color:var(--red)">Belum pernah backup!</strong>');el.innerHTML=lines.join('<br>');}
-  document.getElementById('reminder-overlay').style.display='flex';
-  localStorage.setItem('jj_last_reminder_shown',new Date().toISOString());
-}
-function closeReminder(){document.getElementById('reminder-overlay').style.display='none';}
-function snoozeReminder(){const d=new Date();d.setDate(d.getDate()+7);localStorage.setItem('jj_reminder_snoozed',d.toISOString());closeReminder();alert('Oke! Diingatkan minggu depan.');}
-function doReminderExportAll(){exportExcel();setTimeout(()=>{exportJSON();closeReminder();},800);}
-function openWhatsAppReminder(){
-  const now=new Date(),tgl=now.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  const msg=`📦 *BACKUP PROJECT TRACKER*\n*${tgl}*\n\n• Project: ${projects.length}\n• In Progress: ${projects.filter(p=>p.status==='In Progress').length}\n• Overdue: ${projects.filter(p=>od(p)).length}\n\n✅ File Excel & JSON sudah diexport.\n\n_JAVAFON & JAVACO Creative Studio_`;
-  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
-}
-function checkFridayReminder(){
-  const now=new Date();if(now.getDay()!==5||now.getHours()<17)return;
-  const snoozed=localStorage.getItem('jj_reminder_snoozed');if(snoozed&&new Date(snoozed)>now)return;
-  const lastShown=localStorage.getItem('jj_last_reminder_shown');
-  if(lastShown){const ls=new Date(lastShown);if(ls.getFullYear()===now.getFullYear()&&ls.getMonth()===now.getMonth()&&ls.getDate()===now.getDate())return;}
-  setTimeout(showReminder,2000);
-}
-setInterval(checkFridayReminder,60000);
-
+// Backup reminder disabled (using Google Drive)
+function showReminder(){}
+function closeReminder(){}
+function snoozeReminder(){}
+function doReminderExportAll(){exportExcel();setTimeout(()=>exportJSON(),800);}
+function openWhatsAppReminder(){}
+function checkFridayReminder(){}
+function updateBackupBadge(){}
 // ═══ NAV & MODAL HELPERS ═══
 function showPage(n,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1716,7 +1766,24 @@ function cOver(e,id){if(e.target.id===id)cModal(id);}
 // ═══ UI HELPERS ═══
 function showLoading(msg){const o=document.getElementById('loading-overlay');const m=document.getElementById('loading-msg');if(o)o.classList.remove('hidden');if(m)m.textContent=msg||'Memuat...';}
 function hideLoading(){const o=document.getElementById('loading-overlay');if(o)o.classList.add('hidden');}
-function showError(msg){hideLoading();console.error('Dashboard Error:',msg);alert('❌ '+msg);}
+function showError(msg){
+  hideLoading();
+  console.error('Dashboard Error:',msg);
+  showToast('error','Terjadi Error',msg);
+}
+function showSuccess(msg){showToast('success','Berhasil',msg);}
+function showInfo(msg){showToast('info','Info',msg);}
+function showToast(type,title,msg,dur){
+  const icons={success:'✅',error:'❌',info:'ℹ️'};
+  const c=document.getElementById('toast-container');if(!c)return;
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.innerHTML=`<span class="toast-icon">${icons[type]||'ℹ️'}</span>
+    <div class="toast-body"><div class="toast-title">${title}</div><div class="toast-msg">${msg.substring(0,200)}</div></div>
+    <button class="toast-close" onclick="this.closest('.toast').remove()">×</button>`;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(),dur||6000);
+}
 function setSyncStatus(status){
   const el=document.getElementById('sync-status');if(!el)return;
   const dotClass={'ok':'sync-ok','err':'sync-err','syncing':'sync-ing'}[status]||'sync-ok';
