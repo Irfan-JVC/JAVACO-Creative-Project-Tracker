@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>JAVACO Creative Project Tracker</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+CiAgPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTIiIGZpbGw9IiMyNjNkM2YiLz4KICA8dGV4dCB4PSIzMiIgeT0iMjYiIGZvbnQtZmFtaWx5PSJBcmlhbCBCbGFjayxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIiBmb250LXNpemU9IjE2IiBmaWxsPSIjZmZmZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgbGV0dGVyLXNwYWNpbmc9Ii0xIj5KQVZBPC90ZXh0PgogIDxyZWN0IHg9IjM4IiB5PSIzMiIgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiByeD0iMyIgZmlsbD0iI2NkZGUwMCIvPgogIDx0ZXh0IHg9IjQ4IiB5PSI0MiIgZm9udC1mYW1pbHk9IkFyaWFsIEJsYWNrLHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMyNjNkM2YiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJjZW50cmFsIj4uY288L3RleHQ+Cjwvc3ZnPg==">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -344,6 +344,121 @@ tbody tr.clickable{cursor:pointer}
 .sync-ok{background:var(--green)}.sync-err{background:var(--red)}.sync-ing{background:var(--orange);animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .sync-status{font-size:11px;color:var(--text3);display:flex;align-items:center}
+
+/* ══════════════════════════════
+   MOBILE RESPONSIVE STYLES
+══════════════════════════════ */
+/* Mobile hamburger button */
+.mob-menu-btn{display:none;position:fixed;top:14px;left:14px;z-index:350;width:40px;height:40px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border2);cursor:pointer;align-items:center;justify-content:center;flex-direction:column;gap:5px}
+.mob-menu-btn span{width:18px;height:2px;background:var(--text2);border-radius:2px;transition:all .2s;display:block}
+.mob-menu-btn.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+.mob-menu-btn.open span:nth-child(2){opacity:0}
+.mob-menu-btn.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+
+/* Sidebar overlay for mobile */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:299;backdrop-filter:blur(2px)}
+.sidebar-overlay.open{display:block}
+
+@media (max-width: 768px){
+  /* Show hamburger */
+  .mob-menu-btn{display:flex}
+
+  /* App layout */
+  .app{flex-direction:column}
+
+  /* Sidebar becomes drawer */
+  .sidebar{
+    position:fixed;left:-260px;top:0;bottom:0;z-index:300;
+    width:260px;min-width:260px;
+    transition:left .25s ease;
+    box-shadow:4px 0 20px rgba(0,0,0,.4);
+  }
+  .sidebar.mob-open{left:0}
+
+  /* Main content full width */
+  .main{width:100%;overflow-y:auto}
+
+  /* Topbar */
+  .topbar{padding:14px 14px 14px 64px;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:10}
+  .topbar h2{font-size:17px}
+  .topbar>div:last-child{display:flex;gap:6px;flex-wrap:wrap}
+  .topbar .btn{padding:6px 10px;font-size:11px}
+  .topbar .btn-accent{padding:7px 12px;font-size:12px}
+
+  /* Pages */
+  .page{padding:14px}
+
+  /* KPI grid - 2x2 */
+  .kpi-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .kpi{padding:14px}
+  .kpi-val{font-size:26px}
+
+  /* Summary grid - single column */
+  .summary-grid{grid-template-columns:1fr;gap:8px}
+
+  /* Tables - horizontal scroll */
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:600px}
+  thead th{font-size:9px;padding:8px 10px}
+  tbody td{padding:10px 10px;font-size:12px}
+
+  /* Search bar */
+  .search-bar{flex-wrap:wrap}
+  .search-bar input{min-width:0}
+
+  /* Filter row */
+  .sec-hdr{flex-wrap:wrap;gap:6px;padding:10px 12px}
+  .sec-hdr-r{flex-wrap:wrap;gap:6px}
+  .sec-hdr-r .form-select{width:130px!important}
+
+  /* Settings grid */
+  .settings-grid{grid-template-columns:1fr}
+  .scard{grid-column:auto!important}
+
+  /* Detail panel */
+  .detail-panel{width:100%!important;max-width:100%}
+  .dp-body{padding:14px}
+  .dp-hdr{padding:14px}
+  .dp-title{font-size:16px}
+  .dp-meta-grid{grid-template-columns:1fr 1fr;gap:8px}
+
+  /* Modal */
+  .modal{padding:18px;width:95vw}
+  .form-grid{grid-template-columns:1fr!important}
+  .form-full{grid-column:auto!important}
+
+  /* AI panel */
+  .ai-body{padding:14px}
+
+  /* Report grid */
+  .report-grid{grid-template-columns:1fr}
+
+  /* FAB position */
+  .fab{bottom:18px;right:14px}
+  .chat-panel{width:calc(100vw - 28px);right:14px;bottom:80px;max-height:60vh}
+
+  /* Log items */
+  .log-item{padding:10px 14px}
+  .log-filters{padding:8px 12px}
+
+  /* Upload modal */
+  .upload-progress-wrap{width:85vw}
+
+  /* File grid */
+  .file-grid{grid-template-columns:repeat(2,1fr)}
+
+  /* Viewer */
+  .viewer-inner{width:98vw;max-height:95vh}
+
+  /* Section headers */
+  .sec-hdr h3{font-size:13px}
+}
+
+@media (max-width: 400px){
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .kpi-val{font-size:22px}
+  .topbar h2{font-size:15px}
+}
 </style>
 </head>
 <body>
@@ -386,8 +501,15 @@ tbody tr.clickable{cursor:pointer}
 <!-- MAIN APP -->
 <div class="app" id="main-app" style="display:none">
 
+<!-- MOBILE HAMBURGER -->
+<button class="mob-menu-btn" id="mob-menu-btn" onclick="toggleMobMenu()" aria-label="Menu">
+  <span></span><span></span><span></span>
+</button>
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobMenu()"></div>
+
 <!-- SIDEBAR -->
-<aside class="sidebar">
+<aside class="sidebar" id="sidebar">
   <div class="s-logo">
     <div id="sidebar-logo-container" style="line-height:1">
       <div style="font-family:'League Spartan',sans-serif;font-weight:800;font-size:22px;color:#ffffff;letter-spacing:-1px;line-height:1">JAVACO</div>
@@ -536,7 +658,7 @@ tbody tr.clickable{cursor:pointer}
   <div style="padding:24px 28px">
     <div class="info-box">Pilih project → tulis update → klik Generate. Claude AI akan otomatis tentukan status, progress, dan action items.</div>
     <div class="ai-panel">
-      <div class="ai-hdr"><h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>Claude AI Update Assistant</h3><span class="ai-badge">CLAUDE API</span></div>
+      <div class="ai-hdr"><h3><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>Gemini AI Update Assistant</h3><span class="ai-badge">GEMINI AI</span></div>
       <div class="ai-body">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
           <div class="form-group"><label class="form-label">Pilih Project</label><select class="form-select" id="ai-proj"><option value="">— Pilih project —</option></select></div>
@@ -544,7 +666,7 @@ tbody tr.clickable{cursor:pointer}
         </div>
         <div class="form-group" style="margin-bottom:13px"><label class="form-label">Ceritakan Update</label><textarea class="form-textarea" id="ai-txt" style="min-height:100px" placeholder="Contoh: Wireframe sudah disetujui klien, ada revisi kecil di navigasi..."></textarea></div>
         <div style="display:flex;gap:9px">
-          <button class="btn btn-accent" id="ai-btn" onclick="runAI()" style="flex:1;justify-content:center">✦ Generate Update Log</button>
+          <button class="btn btn-accent" id="ai-btn" onclick="runAI()" style="flex:1;justify-content:center">✦ Generate dengan Gemini</button>
           <button class="btn btn-ghost" id="ai-copy" onclick="copyAI()" style="display:none">Salin</button>
         </div>
         <div class="ai-result" id="ai-res"></div>
@@ -605,10 +727,10 @@ tbody tr.clickable{cursor:pointer}
         </div>
       </div>
       <div class="scard" style="grid-column:1/-1">
-        <div class="scard-hdr"><h3>Claude API Key</h3><p>Untuk AI Update Assistant dan AI Chat</p></div>
+        <div class="scard-hdr"><h3>Gemini API Key</h3><p>Untuk AI Update Assistant, Import Request, dan AI Chat</p></div>
         <div class="scard-body">
-          <div class="info-box">Daftar di <strong style="color:var(--accent)">console.anthropic.com</strong> → API Keys → Create Key → paste di bawah.</div>
-          <div style="display:flex;gap:8px;max-width:540px"><input class="form-input" id="api-inp" type="password" placeholder="sk-ant-api03-..." style="flex:1"><button class="btn btn-accent btn-sm" onclick="saveKey()">Simpan</button><button class="btn btn-ghost btn-sm" onclick="testKey()">Test</button></div>
+          <div class="info-box">Buka <strong style="color:var(--accent)">aistudio.google.com</strong> → klik <strong style="color:var(--accent)">Get API Key</strong> → Create API Key → paste di bawah. <strong style="color:var(--green)">Gratis tanpa kartu kredit!</strong></div>
+          <div style="display:flex;gap:8px;max-width:540px"><input class="form-input" id="api-inp" type="password" placeholder="AIzaSy..." style="flex:1"><button class="btn btn-accent btn-sm" onclick="saveKey()">Simpan</button><button class="btn btn-ghost btn-sm" onclick="testKey()">Test</button></div>
           <div id="api-st" style="font-size:12px;color:var(--text3);margin-top:7px;font-weight:600"></div>
         </div>
       </div>
@@ -636,11 +758,11 @@ tbody tr.clickable{cursor:pointer}
 </div>
 <div class="chat-panel" id="chat-panel">
   <div class="chat-panel-hdr">
-    <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>Claude AI Assistant</h4>
+    <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>Gemini AI Assistant</h4>
     <button class="chat-close" onclick="toggleChat()">×</button>
   </div>
   <div class="chat-msgs" id="chat-msgs">
-    <div class="chat-msg ai">Halo! Saya Claude. Tanyakan apa saja tentang project kamu!</div>
+    <div class="chat-msg ai">Halo! Saya Gemini AI. Tanyakan apa saja tentang project kamu!</div>
   </div>
   <div class="chat-suggestions">
     <div class="chat-sug" onclick="askChat('Berapa project yang overdue?')">Project overdue?</div>
@@ -721,7 +843,7 @@ const CONFIG = {
   SHEET_ID:  '1sMznqtgV_9sCuJ-cC48qdwoYjA6UAI0gcN0zj9dtBeU',
   DRIVE_FOLDER_ID: '1Y0hWO6YFXvjP4iWfL4xC8wgbJpDNKiqO',
   SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
-  CLAUDE_API_KEY_STORAGE: 'jj_apikey',
+  AI_KEY_STORAGE: 'jj_apikey',
   CATS_KEY: 'jj_cats_v3',
   PICS_KEY: 'jj_pics_v3',
 };
@@ -747,7 +869,7 @@ function gC(){try{return JSON.parse(localStorage.getItem(CONFIG.CATS_KEY))||DEF_
 function gPI(){try{return JSON.parse(localStorage.getItem(CONFIG.PICS_KEY))||DEF_PICS;}catch{return DEF_PICS;}}
 function sC(a){localStorage.setItem(CONFIG.CATS_KEY,JSON.stringify(a));}
 function sPI(a){localStorage.setItem(CONFIG.PICS_KEY,JSON.stringify(a));}
-function getApiKey(){return localStorage.getItem(CONFIG.CLAUDE_API_KEY_STORAGE)||'';}
+function getApiKey(){return localStorage.getItem(CONFIG.AI_KEY_STORAGE)||'';}
 function isManager(){return currentUser?.role==='manager';}
 function canDelete(p){return isManager()||(p.created_by===currentUser?.email);}
 function isAssigned(p){if(!currentUser)return false;if(isManager())return true;const assigned=p.assigned_to?p.assigned_to.split(',').map(e=>e.trim()):[];return p.created_by===currentUser.email||assigned.includes(currentUser.email);}
@@ -1714,24 +1836,59 @@ function addCat(){const v=document.getElementById('new-cat').value.trim();if(!v)
 function delCat(n){if(!confirm(`Hapus "${n}"?`))return;sC(gC().filter(x=>x!==n));renderSettings();popSelects();}
 function addPIC(){const v=document.getElementById('new-pic').value.trim();if(!v)return;const p=gPI();if(p.includes(v)){alert('Sudah ada!');return;}p.push(v);sPI(p);document.getElementById('new-pic').value='';renderSettings();popSelects();}
 function delPIC(n){sPI(gPI().filter(x=>x!==n));renderSettings();popSelects();}
-function saveKey(){const k=document.getElementById('api-inp').value.trim();if(!k){alert('Kosong!');return;}localStorage.setItem(CONFIG.CLAUDE_API_KEY_STORAGE,k);document.getElementById('api-st').textContent='✓ API Key tersimpan';document.getElementById('api-st').style.color='var(--green)';}
-async function testKey(){const k=getApiKey();if(!k){alert('Isi dulu!');return;}const st=document.getElementById('api-st');st.textContent='Testing...';st.style.color='var(--text3)';try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:10,messages:[{role:'user',content:'Hi'}]})});st.textContent=r.ok?'✓ Claude siap!':'✗ API Key tidak valid.';st.style.color=r.ok?'var(--green)':'var(--red)';}catch{st.textContent='✗ Gagal konek.';st.style.color='var(--red)';}}
+function saveKey(){const k=document.getElementById('api-inp').value.trim();if(!k){alert('Kosong!');return;}localStorage.setItem(CONFIG.AI_KEY_STORAGE,k);document.getElementById('api-st').textContent='✓ API Key tersimpan';document.getElementById('api-st').style.color='var(--green)';}
+async function testKey(){const k=getApiKey();if(!k){alert('Isi API Key dulu!');return;}const st=document.getElementById('api-st');st.textContent='Testing...';st.style.color='var(--text3)';try{const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:'Hi'}]}]})});st.textContent=r.ok?'✓ Gemini siap! AI aktif.':'✗ API Key tidak valid.';st.style.color=r.ok?'var(--green)':'var(--red)';}catch{st.textContent='✗ Gagal konek.';st.style.color='var(--red)';}}
+
+// ═══ GEMINI AI HELPER ═══
+async function callGemini(prompt, systemPrompt){
+  const k=getApiKey();
+  if(!k)throw new Error('API Key Gemini belum diisi. Masuk ke Pengaturan untuk mengisinya.');
+  
+  // Build contents array
+  const contents=[];
+  
+  // Gemini uses system_instruction for system prompt
+  const body={
+    contents:[{role:'user',parts:[{text:prompt}]}],
+    generationConfig:{maxOutputTokens:800,temperature:0.3}
+  };
+  if(systemPrompt){
+    body.system_instruction={parts:[{text:systemPrompt}]};
+  }
+  
+  const r=await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${k}`,
+    {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}
+  );
+  
+  if(r.status===400){const e=await r.json();throw new Error('API Error: '+(e.error?.message||'Request tidak valid'));}
+  if(r.status===403){throw new Error('API Key tidak valid atau tidak punya akses Gemini API.');}
+  if(r.status===429){throw new Error('Terlalu banyak request. Coba lagi dalam beberapa detik.');}
+  if(!r.ok){const e=await r.json();throw new Error('Gemini error '+r.status+': '+(e.error?.message||'Unknown error'));}
+  
+  const data=await r.json();
+  const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+  if(!text)throw new Error('Gemini tidak mengembalikan respons.');
+  return text;
+}
 
 // ═══ AI UPDATE ═══
 async function runAI(){
   const pn=document.getElementById('ai-proj').value,inp=document.getElementById('ai-txt').value.trim(),pic=document.getElementById('ai-pic').value.trim();
   if(!inp){alert('Tulis update dulu!');return;}
-  const k=getApiKey();if(!k){alert('Isi Claude API Key di Pengaturan!');return;}
+  const k=getApiKey();if(!k){alert('Isi Gemini API Key di Pengaturan!');return;}
   const btn=document.getElementById('ai-btn'),res=document.getElementById('ai-res'),cp=document.getElementById('ai-copy');
-  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Memproses...';res.classList.remove('show');cp.style.display='none';
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Gemini memproses...';res.classList.remove('show');cp.style.display='none';
   const p=projects.find(x=>x.name===pn);
   const ctx=p?`Project: "${p.name}" | ${p.cat} | Status: ${p.status} | Progress: ${p.progress}%`:`Project: ${pn||'tidak disebutkan'}`;
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,messages:[{role:'user',content:`Kamu adalah AI assistant project tracker JAVAFON & JAVACO. Balas HANYA JSON:\n{"status":"<Not Started/In Progress/On Hold/Completed>","progress":<0-100>,"ringkasan":"<1-2 kalimat>","action_items":["<item>"],"catatan":"<atau kosong>"}\nKonteks: ${ctx}\nUpdate: "${inp}"`}]})});
-    const data=await r.json();if(!r.ok)throw new Error(data.error?.message||'API error');
-    let parsed;try{parsed=JSON.parse(data.content.map(i=>i.text||'').join('').replace(/```json|```/g,'').trim());}catch{throw new Error('Format tidak valid');}
+    const prompt=`Kamu adalah AI assistant project tracker JAVAFON & JAVACO Creative Studio. Balas HANYA dengan JSON valid, tanpa teks lain, tanpa markdown backticks. Format: {"status":"<Not Started/In Progress/On Hold/Completed>","progress":<0-100>,"ringkasan":"<1-2 kalimat>","action_items":["<item>"],"catatan":"<atau kosong>"}. Konteks project: ${ctx}. Update dari user: "${inp}"`;
+    const rawText=await callGemini(prompt);
+    let parsed;
+    try{parsed=JSON.parse(rawText.replace(/`+json|`+/g,'').trim());}
+    catch{throw new Error('Format respons tidak valid. Coba lagi.');}
     const n=ts(),dp=pn||'[Belum dipilih]';
-    res.innerHTML=`<div class="ai-result-title">✦ Hasil Generate Claude AI</div>
+    res.innerHTML=`<div class="ai-result-title">✦ Hasil Generate Gemini AI</div>
       <div class="res-row"><span class="res-key">Project</span><span class="res-val" style="font-weight:700">${dp}</span></div>
       <div class="res-row"><span class="res-key">Status</span><span class="res-val">${sb(parsed.status)}</span></div>
       <div class="res-row"><span class="res-key">Progress</span><span class="res-val">${parsed.progress}%</span></div>
@@ -1747,7 +1904,7 @@ async function runAI(){
       await loadAllData();
     }
   }catch(e){res.innerHTML=`<div style="color:var(--red);font-size:13px">✗ ${e.message}</div>`;res.classList.add('show');}
-  finally{btn.disabled=false;btn.innerHTML='✦ Generate Update Log';}
+  finally{btn.disabled=false;btn.innerHTML='✦ Generate dengan Gemini';}
 }
 
 async function applyLog(projName,parsed){
@@ -1772,18 +1929,28 @@ function addUpFiles(files){files.forEach(f=>{if(upFiles.length>=5)return;const r
 function renderFpList(){document.getElementById('fp-list').innerHTML=upFiles.map((f,i)=>`<div class="fp-item"><span class="fp-icon">${fi(f.type)}</span><span class="fp-name">${f.name}</span><button class="fp-del" onclick="upFiles.splice(${i},1);renderFpList()">×</button></div>`).join('');}
 async function runUpAI(){
   if(!upFiles.length){alert('Upload file dulu!');return;}
-  const k=getApiKey();if(!k){alert('Isi Claude API Key di Pengaturan!');return;}
+  const k=getApiKey();if(!k){alert('Isi Gemini API Key di Pengaturan!');return;}
   const btn=document.getElementById('up-ai-btn'),res=document.getElementById('up-res');
-  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Claude sedang membaca...';res.classList.remove('show');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Gemini sedang membaca...';res.classList.remove('show');
   const extra=document.getElementById('up-extra').value,cats=gC().join(', ');
-  let mc=[];
-  for(const f of upFiles){if(f.isImg){const b64=f.data.split(',')[1];mc.push({type:'image',source:{type:'base64',media_type:f.type||'image/jpeg',data:b64}});}else{mc.push({type:'text',text:`[File: ${f.name}]\n${f.data.substring(0,3000)}`});}}
-  mc.push({type:'text',text:`JAVAFON & JAVACO project tracker. ${extra?`Instruksi: ${extra}.`:''} Kategori: ${cats}. Balas HANYA JSON:\n{"name":"<nama>","cat":"<kategori>","status":"Not Started","prio":"<Low/Medium/High/Critical>","due":"<YYYY-MM-DD atau kosong>","notes":"<deskripsi>","action_items":["<item>"],"summary":"<ringkasan>"}`});
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:mc}]})});
-    const data=await r.json();if(!r.ok)throw new Error(data.error?.message||'API error');
-    let parsed;try{parsed=JSON.parse(data.content.map(i=>i.text||'').join('').replace(/```json|```/g,'').trim());}catch{throw new Error('Format tidak valid');}
-    res.innerHTML=`<div class="ai-result-title">✦ Claude Menemukan Project</div>
+    let fileTexts=[];
+    for(const f of upFiles){
+      if(f.isImg){fileTexts.push(`[Gambar: ${f.name}]`);}
+      else{fileTexts.push(`[File: ${f.name}]
+${f.data.substring(0,2000)}`);}
+    }
+    const prompt=`Kamu adalah AI assistant project tracker JAVAFON & JAVACO. Baca konten file berikut dan identifikasi detail project. ${extra?`Instruksi: ${extra}.`:''} Kategori tersedia: ${cats}. Balas HANYA dengan JSON valid tanpa teks lain: {"name":"<nama project>","cat":"<pilih dari kategori>","status":"Not Started","prio":"<Low/Medium/High/Critical>","due":"<YYYY-MM-DD atau kosong>","notes":"<deskripsi>","action_items":["<item>"],"summary":"<ringkasan>"}
+
+Konten file:
+${fileTexts.join('
+
+')}`;
+    const rawText=await callGemini(prompt);
+    let parsed;
+    try{parsed=JSON.parse(rawText.replace(/`+json|`+/g,'').trim());}
+    catch{throw new Error('Format respons tidak valid. Coba lagi.');}
+    res.innerHTML=`<div class="ai-result-title">✦ Gemini Menemukan Project</div>
       <div class="res-row"><span class="res-key">Nama</span><span class="res-val" style="font-weight:700">${parsed.name}</span></div>
       <div class="res-row"><span class="res-key">Kategori</span><span class="res-val">${parsed.cat}</span></div>
       <div class="res-row"><span class="res-key">Prioritas</span><span class="res-val">${pb(parsed.prio)}</span></div>
@@ -1794,6 +1961,7 @@ async function runUpAI(){
   }catch(e){res.innerHTML=`<div style="color:var(--red);font-size:13px">✗ ${e.message}</div>`;res.classList.add('show');}
   finally{btn.disabled=false;btn.innerHTML='✦ Analisis & Tambah Project';}
 }
+
 async function saveUpProj(parsed){
   const n=ts(),newId=uid();
   const row=[newId,parsed.name,parsed.cat,'Not Started',parsed.prio||'Medium','0',parsed.due||'','',parsed.notes||'',n,currentUser.email,currentUser.email,n];
@@ -1811,19 +1979,24 @@ async function sendChat(){const inp=document.getElementById('chat-input'),q=inp.
 async function askChat(q){
   const k=getApiKey();const msgs=document.getElementById('chat-msgs');
   document.getElementById('chat-suggestions').style.display='none';
-  msgs.innerHTML+=`<div class="chat-msg user">${q}</div><div class="chat-msg ai" id="chat-loading">Claude sedang menjawab...</div>`;
+  msgs.innerHTML+=`<div class="chat-msg user">${q}</div><div class="chat-msg ai" id="chat-loading">Gemini sedang menjawab...</div>`;
   msgs.scrollTop=msgs.scrollHeight;
-  if(!k){const el=document.getElementById('chat-loading');if(el){el.id='';el.textContent='API Key belum diisi di Pengaturan.';}return;}
+  if(!k){const el=document.getElementById('chat-loading');if(el){el.id='';el.textContent='API Key Gemini belum diisi di Pengaturan.';}return;}
   const myP=projects.filter(p=>p.status!=='Completed');
   const ctx=`User: ${currentUser?.name} (${currentUser?.role})\nProject aktif: ${myP.length}\nIn Progress: ${myP.filter(p=>p.status==='In Progress').length}\nOverdue: ${myP.filter(p=>od(p)).length}\nDaftar project: ${JSON.stringify(myP.map(p=>({name:p.name,status:p.status,progress:p.progress,due:p.due,prio:p.prio})))}`;
-  chatHist.push({role:'user',content:q});if(chatHist.length>12)chatHist=chatHist.slice(-12);
+  // Build conversation history for Gemini
+  chatHist.push({role:'user',parts:[{text:q}]});
+  if(chatHist.length>12)chatHist=chatHist.slice(-12);
+  const systemPrompt=`Kamu AI assistant JAVAFON & JAVACO Project Tracker. Jawab dalam Bahasa Indonesia, ringkas dan actionable. ${ctx}`;
+  const fullPrompt=`${systemPrompt}\n\nPertanyaan: ${q}`;
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,system:`Kamu AI assistant JAVAFON & JAVACO Project Tracker. Jawab dalam Bahasa Indonesia, ringkas dan helpful. ${ctx}`,messages:chatHist})});
-    const data=await r.json();if(!r.ok)throw new Error(data.error?.message||'err');
-    const reply=data.content.map(i=>i.text||'').join('');
-    chatHist.push({role:'assistant',content:reply});
-    const el=document.getElementById('chat-loading');if(el){el.id='';el.textContent=reply;}
-  }catch(e){const el=document.getElementById('chat-loading');if(el){el.id='';el.textContent=`Error: ${e.message}`;}}
+    const reply=await callGemini(fullPrompt);
+    chatHist.push({role:'model',parts:[{text:reply}]});
+    const el=document.getElementById('chat-loading');if(el){el.id='';el.classList.remove('loading');el.textContent=reply;}
+  }catch(e){
+    chatHist.pop(); // remove failed user message
+    const el=document.getElementById('chat-loading');if(el){el.id='';el.classList.remove('loading');el.textContent=`Error: ${e.message}`;}
+  }
   msgs.scrollTop=msgs.scrollHeight;
 }
 
@@ -1860,12 +2033,31 @@ function doReminderExportAll(){exportExcel();setTimeout(()=>exportJSON(),800);}
 function openWhatsAppReminder(){}
 function checkFridayReminder(){}
 function updateBackupBadge(){}
+// ═══ MOBILE MENU ═══
+function toggleMobMenu(){
+  const sidebar=document.getElementById('sidebar');
+  const btn=document.getElementById('mob-menu-btn');
+  const overlay=document.getElementById('sidebar-overlay');
+  sidebar.classList.toggle('mob-open');
+  btn.classList.toggle('open');
+  overlay.classList.toggle('open');
+}
+function closeMobMenu(){
+  const sidebar=document.getElementById('sidebar');
+  const btn=document.getElementById('mob-menu-btn');
+  const overlay=document.getElementById('sidebar-overlay');
+  sidebar.classList.remove('mob-open');
+  btn.classList.remove('open');
+  overlay.classList.remove('open');
+}
+
 // ═══ NAV & MODAL HELPERS ═══
 function showPage(n,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+n).classList.add('active');
   if(el)el.classList.add('active');
+  closeMobMenu(); // auto close sidebar on mobile
   renderAll();
 }
 function fLog(f,el){logFilter=f;document.querySelectorAll('#page-log .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderLog();}
