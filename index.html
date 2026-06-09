@@ -849,7 +849,8 @@ async function sheetsRead(sheetName){
   const url=`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(sheetName)}!A2:Z`;
   let r=await fetch(url,{headers:{'Authorization':'Bearer '+accessToken}});
   if(r.status===401){await ensureToken();r=await fetch(url,{headers:{'Authorization':'Bearer '+accessToken}});}
-  if(!r.ok)throw new Error('Sheets read error: '+r.status);
+  if(r.status===403)throw new Error('Akses ditolak (403). Pastikan Google Sheets API aktif dan spreadsheet sudah di-share.');
+  if(!r.ok){const et=await r.text();console.error('Sheets read error:',et);throw new Error('Sheets read '+r.status+': '+et);}
   const data=await r.json();
   return data.values||[];
 }
@@ -858,7 +859,8 @@ async function sheetsAppend(sheetName,rows){
   const url=`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(sheetName)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
   let r=await fetch(url,{method:'POST',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:rows})});
   if(r.status===401){await ensureToken();r=await fetch(url,{method:'POST',headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},body:JSON.stringify({values:rows})});}
-  if(!r.ok)throw new Error('Sheets append error: '+r.status+' '+await r.text());
+  if(r.status===403)throw new Error('Akses ditolak (403). Pastikan Google Sheets API sudah diaktifkan di Google Cloud Console dan spreadsheet sudah di-share ke akun kamu.');
+  if(!r.ok){const errText=await r.text();console.error('Sheets API error:',errText);throw new Error('Sheets error '+r.status+': '+errText);}
   return r.json();
 }
 
@@ -1367,7 +1369,7 @@ async function loadDetailFiles(projectId,projectName){
   const fg=document.getElementById('dp-fg');const lbl=document.getElementById('dp-fc-lbl');if(!fg)return;
   try{
     const rows=await sheetsRead('Files');
-    const files=rows.filter(r=>r[1]===projectId).map(r=>({id:r[0],name:r[4],mime:r[3],drive_id:r[4],drive_url:r[5],thumb_url:r[6]}));
+    const files=rows.filter(r=>r[1]===projectId).map(r=>({id:r[0],name:r[4],mime:r[3],drive_id:r[5],drive_url:r[6],thumb_url:r[7]}));
     if(lbl)lbl.textContent=files.length?`(${files.length} file)`:'';
     if(!files.length){fg.innerHTML='';return;}
     fg.innerHTML=files.map(f=>{
@@ -1388,9 +1390,9 @@ async function upRefFiles(e){
     try{
       const result=await driveUploadFile(f,projectName);
       // Save to Files sheet
-      const row=[uid(),projectId,projectName,f.type,result.name,result.webViewLink,result.thumbnailLink||'',currentUser.email,ts()];
+      const row=[uid(),projectId,projectName,f.type,result.name,result.id||'',result.webViewLink,result.thumbnailLink||'',currentUser.email,ts()];
       await sheetsAppend('Files',[row]);
-      await appendLog(projectId,projectName,window._detailP?.status||'','',`File dilampirkan: ${f.name}`,'');
+      await appendLog(projectId,projectName,window._detail?.status||'','',`File dilampirkan: ${f.name}`,'');
     }catch(err){hideLoading();showError(`Gagal upload ${f.name}: ${err.message}`);}
   }
   hideLoading();
@@ -1699,7 +1701,7 @@ function cOver(e,id){if(e.target.id===id)cModal(id);}
 // ═══ UI HELPERS ═══
 function showLoading(msg){const o=document.getElementById('loading-overlay');const m=document.getElementById('loading-msg');if(o)o.classList.remove('hidden');if(m)m.textContent=msg||'Memuat...';}
 function hideLoading(){const o=document.getElementById('loading-overlay');if(o)o.classList.add('hidden');}
-function showError(msg){hideLoading();alert('❌ '+msg);}
+function showError(msg){hideLoading();console.error('Dashboard Error:',msg);alert('❌ '+msg);}
 function setSyncStatus(status){
   const el=document.getElementById('sync-status');if(!el)return;
   const dotClass={'ok':'sync-ok','err':'sync-err','syncing':'sync-ing'}[status]||'sync-ok';
