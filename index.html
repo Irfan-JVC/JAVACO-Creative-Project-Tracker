@@ -629,7 +629,11 @@ tbody tr.clickable{cursor:pointer}
       <div class="form-group"><label class="form-label">Prioritas</label><select class="form-select" id="f-prio"><option>Medium</option><option>Low</option><option>High</option><option>Critical</option></select></div>
       <div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="f-due" type="date"></div>
       <div class="form-group"><label class="form-label">Progress (%)</label><input class="form-input" id="f-prog" type="number" min="0" max="100" value="0"></div>
-      <div class="form-group form-full manager-assign-field" id="assign-field" style="display:none">
+      <div class="form-group">
+        <label class="form-label">PIC / Penanggung Jawab</label>
+        <select class="form-select" id="f-pic"></select>
+      </div>
+      <div class="form-group manager-assign-field" id="assign-field" style="display:none">
         <label class="form-label">Assign ke (pilih eksekutor, bisa lebih dari 1)</label>
         <div id="assign-checkboxes" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border)"></div>
       </div>
@@ -1211,7 +1215,7 @@ function popSelects(){
 function openAddModal(){
   editId=null;document.getElementById('modal-ttl').textContent='Tambah Project Baru';
   popSelects();
-  ['f-name','f-notes'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+  ['f-name','f-notes','f-pic'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
   const fp=document.getElementById('f-prog');if(fp)fp.value='0';
   const fd2=document.getElementById('f-due');if(fd2)fd2.value=new Date().toISOString().split('T')[0];
   document.getElementById('f-stat').value='Not Started';
@@ -1229,7 +1233,7 @@ function oEdit(id){
   document.getElementById('f-prio').value=p.prio;
   document.getElementById('f-due').value=p.due||'';
   document.getElementById('f-prog').value=p.progress||0;
-  document.getElementById('f-pic').value=p.pic||'';
+  if(document.getElementById('f-pic'))document.getElementById('f-pic').value=p.pic||'';
   document.getElementById('f-notes').value=p.notes||'';
   // Check assignees
   setTimeout(()=>{
@@ -1247,7 +1251,18 @@ async function saveProjF(){
   // Get assignees
   const cbs=document.querySelectorAll('#assign-checkboxes input[type=checkbox]:checked');
   const assignedTo=Array.from(cbs).map(cb=>cb.value).join(',');
-  const obj={name,cat:document.getElementById('f-cat').value,status:document.getElementById('f-stat').value,prio:document.getElementById('f-prio').value,due:document.getElementById('f-due').value,progress:Number(document.getElementById('f-prog').value)||0,pic:document.getElementById('f-pic').value,notes:document.getElementById('f-notes').value,updated:n,assigned_to:assignedTo||currentUser.email};
+  const obj={
+    name,
+    cat:document.getElementById('f-cat')?.value||'',
+    status:document.getElementById('f-stat')?.value||'Not Started',
+    prio:document.getElementById('f-prio')?.value||'Medium',
+    due:document.getElementById('f-due')?.value||'',
+    progress:Number(document.getElementById('f-prog')?.value)||0,
+    pic:document.getElementById('f-pic')?.value||'',
+    notes:document.getElementById('f-notes')?.value||'',
+    updated:n,
+    assigned_to:assignedTo||currentUser?.email||''
+  };
   showLoading('Menyimpan project...');
   try{
     if(editId){
@@ -1261,7 +1276,7 @@ async function saveProjF(){
       }
     }else{
       const newId=uid();
-      const row=[newId,obj.name,obj.cat,obj.status,obj.prio,obj.progress,obj.due,obj.pic,obj.notes,obj.updated,currentUser.email,obj.assigned_to,n];
+      const row=[newId,obj.name,obj.cat,obj.status,obj.prio,obj.progress,obj.due,obj.pic,obj.notes,obj.updated,currentUser?.email||'',obj.assigned_to||currentUser?.email||'',n];
       await sheetsAppend('Projects',[row]);
       await appendLog(newId,name,obj.status,'0%',`Project baru "${name}" (${obj.cat}) ditambahkan.`,obj.notes);
     }
