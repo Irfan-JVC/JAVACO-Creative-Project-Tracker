@@ -78,12 +78,19 @@ body{font-family:'League Spartan',sans-serif;background:var(--bg);color:var(--te
 .page.active{animation:fadeUp .2s ease}
 
 /* ── LOADING OVERLAY ── */
-.loading-overlay{position:fixed;inset:0;background:rgba(26,46,48,.85);z-index:900;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(4px)}
+.loading-overlay{position:fixed;inset:0;background:rgba(26,46,48,.9);z-index:900;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(5px)}
 .loading-overlay.hidden{display:none}
 .spinner-lg{width:36px;height:36px;border:3px solid rgba(205,222,0,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
 .loading-overlay p{font-size:13px;color:var(--text2);font-weight:500}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* Progress upload bar */
+.upload-progress-wrap{width:320px;background:rgba(255,255,255,.08);border-radius:var(--radius-sm);border:1px solid var(--border);padding:18px 20px;text-align:center}
+.upload-progress-wrap .up-filename{font-size:12px;color:var(--text3);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px}
+.upload-progress-wrap .up-bar-bg{background:rgba(255,255,255,.1);border-radius:20px;height:8px;overflow:hidden;margin-bottom:8px}
+.upload-progress-wrap .up-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),#a8ff00);border-radius:20px;transition:width .3s ease;width:0%}
+.upload-progress-wrap .up-pct{font-size:22px;font-weight:800;color:var(--accent);letter-spacing:-1px;line-height:1}
+.upload-progress-wrap .up-sub{font-size:11px;color:var(--text3);margin-top:4px}
 
+/* ── SMART SUMMARY ── */
 /* ── SMART SUMMARY ── */
 .summary-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:22px}
 .s-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;border-left:3px solid transparent}
@@ -362,8 +369,16 @@ tbody tr.clickable{cursor:pointer}
 
 <!-- LOADING OVERLAY -->
 <div class="loading-overlay hidden" id="loading-overlay">
-  <div class="spinner-lg"></div>
-  <p id="loading-msg">Memuat data...</p>
+  <div id="loading-spinner-mode">
+    <div class="spinner-lg" style="margin:0 auto 12px"></div>
+    <p id="loading-msg" style="font-size:13px;color:var(--text2);font-weight:500;text-align:center">Memuat data...</p>
+  </div>
+  <div class="upload-progress-wrap" id="upload-progress-mode" style="display:none">
+    <div class="up-filename" id="up-filename">Mengupload file...</div>
+    <div class="up-bar-bg"><div class="up-bar-fill" id="up-bar-fill"></div></div>
+    <div class="up-pct" id="up-pct">0%</div>
+    <div class="up-sub" id="up-sub">Menghubungkan ke Google Drive</div>
+  </div>
 </div>
 
 <!-- TOAST NOTIFICATIONS -->
@@ -910,9 +925,73 @@ async function driveUploadFile(file,projectName){
   const form=new FormData();
   form.append('metadata',new Blob([JSON.stringify(metadata)],{type:'application/json'}));
   form.append('file',file);
-  const r=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,thumbnailLink,name,mimeType',{method:'POST',headers:{'Authorization':'Bearer '+accessToken},body:form});
-  if(!r.ok)throw new Error('Drive upload error: '+r.status);
-  return r.json(); // {id, webViewLink, thumbnailLink, name, mimeType}
+  
+  // Show upload progress bar
+  showUploadProgress(file.name,0);
+  
+  return new Promise((resolve,reject)=>{
+    const xhr=new XMLHttpRequest();
+    xhr.open('POST','https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,thumbnailLink,name,mimeType');
+    xhr.setRequestHeader('Authorization','Bearer '+accessToken);
+    
+    // Track upload progress
+    xhr.upload.onprogress=function(e){
+      if(e.lengthComputable){
+        const pct=Math.round((e.loaded/e.total)*100);
+        updateUploadProgress(pct, formatBytes(e.loaded)+' / '+formatBytes(e.total));
+      }
+    };
+    
+    xhr.onload=function(){
+      hideUploadProgress();
+      if(xhr.status>=200&&xhr.status<300){
+        try{resolve(JSON.parse(xhr.responseText));}
+        catch(e){reject(new Error('Parse error: '+e.message));}
+      }else{
+        reject(new Error('Drive upload error: '+xhr.status+' '+xhr.responseText.substring(0,100)));
+      }
+    };
+    
+    xhr.onerror=function(){hideUploadProgress();reject(new Error('Network error saat upload'));};
+    xhr.onabort=function(){hideUploadProgress();reject(new Error('Upload dibatalkan'));};
+    
+    xhr.send(form);
+  });
+}
+
+function formatBytes(bytes){
+  if(bytes<1024)return bytes+'B';
+  if(bytes<1048576)return (bytes/1024).toFixed(1)+'KB';
+  return (bytes/1048576).toFixed(1)+'MB';
+}
+
+function showUploadProgress(filename,pct){
+  const lo=document.getElementById('loading-overlay');
+  const spin=document.getElementById('loading-spinner-mode');
+  const prog=document.getElementById('upload-progress-mode');
+  if(lo)lo.classList.remove('hidden');
+  if(spin)spin.style.display='none';
+  if(prog)prog.style.display='block';
+  updateUploadProgress(pct||0,'Memulai upload...');
+  const fn=document.getElementById('up-filename');
+  if(fn)fn.textContent=filename||'Mengupload file...';
+}
+
+function updateUploadProgress(pct,sub){
+  const bar=document.getElementById('up-bar-fill');
+  const pctEl=document.getElementById('up-pct');
+  const subEl=document.getElementById('up-sub');
+  if(bar)bar.style.width=pct+'%';
+  if(pctEl)pctEl.textContent=pct+'%';
+  if(subEl)subEl.textContent=sub||'';
+}
+
+function hideUploadProgress(){
+  const spin=document.getElementById('loading-spinner-mode');
+  const prog=document.getElementById('upload-progress-mode');
+  if(spin)spin.style.display='block';
+  if(prog)prog.style.display='none';
+  hideLoading();
 }
 
 async function getOrCreateDriveFolder(projectName){
@@ -1409,14 +1488,44 @@ async function loadDetailFiles(projectId,projectName){
     const files=rows.filter(r=>r[1]===projectId).map(r=>({id:r[0],name:r[4],mime:r[3],drive_id:r[5],drive_url:r[6],thumb_url:r[7]}));
     if(lbl)lbl.textContent=files.length?`(${files.length} file)`:'';
     if(!files.length){fg.innerHTML='';return;}
-    fg.innerHTML=files.map(f=>{
+    fg.innerHTML=files.map((f,i)=>{
       const isImg=f.mime&&f.mime.startsWith('image/');
-      return `<div class="file-item" onclick="viewDriveFile('${f.drive_url}','${f.name}','${f.mime}','${f.thumb_url}','${f.drive_id}')">
-        <div class="file-thumb"><span class="fi" style="font-size:28px">${isImg?'🖼️':fi(f.mime)}</span></div>
-        <div class="file-name">${f.name}</div>
+      return `<div class="file-item" style="position:relative">
+        <div onclick="viewDriveFile('${f.drive_url}','${f.name}','${f.mime}','${f.thumb_url}','${f.drive_id}')">
+          <div class="file-thumb"><span class="fi" style="font-size:28px">${isImg?'🖼️':fi(f.mime)}</span></div>
+          <div class="file-name">${f.name}</div>
+        </div>
+        <button onclick="deleteProjectFile('${f.id}','${projectId}','${f.drive_id}',event)" 
+          style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(255,107,107,.85);border:none;cursor:pointer;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;line-height:1;z-index:1;font-weight:700" 
+          title="Hapus file">×</button>
       </div>`;
     }).join('');
   }catch(e){console.warn('Load files error:',e);}
+}
+
+async function deleteProjectFile(fileRowId, projectId, driveFileId, e){
+  e.stopPropagation();
+  if(!confirm('Hapus file ini? File juga akan dihapus dari Google Drive.'))return;
+  showLoading('Menghapus file...');
+  try{
+    // 1. Delete from Drive
+    if(driveFileId){
+      await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}`,{
+        method:'DELETE',
+        headers:{'Authorization':'Bearer '+accessToken}
+      });
+    }
+    // 2. Delete row from Files sheet
+    const rows=await sheetsRead('Files');
+    const idx=rows.findIndex(r=>r[0]===fileRowId);
+    if(idx>=0)await sheetsDeleteRow('Files',idx+1);
+    hideLoading();
+    showToast('success','File dihapus','File berhasil dihapus dari Drive dan dashboard.');
+    loadDetailFiles(projectId, window._detail?.name||'');
+  }catch(err){
+    hideLoading();
+    showError('Gagal hapus file: '+err.message);
+  }
 }
 
 async function upRefFiles(e){
@@ -1764,7 +1873,16 @@ function cModal(id){document.getElementById(id).classList.remove('open');}
 function cOver(e,id){if(e.target.id===id)cModal(id);}
 
 // ═══ UI HELPERS ═══
-function showLoading(msg){const o=document.getElementById('loading-overlay');const m=document.getElementById('loading-msg');if(o)o.classList.remove('hidden');if(m)m.textContent=msg||'Memuat...';}
+function showLoading(msg){
+  const o=document.getElementById('loading-overlay');
+  const m=document.getElementById('loading-msg');
+  const spin=document.getElementById('loading-spinner-mode');
+  const prog=document.getElementById('upload-progress-mode');
+  if(o)o.classList.remove('hidden');
+  if(spin)spin.style.display='block';
+  if(prog)prog.style.display='none';
+  if(m)m.textContent=msg||'Memuat...';
+}
 function hideLoading(){const o=document.getElementById('loading-overlay');if(o)o.classList.add('hidden');}
 function showError(msg){
   hideLoading();
