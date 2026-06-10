@@ -1236,7 +1236,7 @@ function projRow(p,q,showCreatedBy){
     ${showCreatedBy?'<td style="font-size:12px;color:var(--text3)">'+( p.created_by||'—')+'</td>':''}
     <td style="white-space:nowrap" onclick="event.stopPropagation()">
       <button class="btn btn-ghost btn-sm" onclick="oEdit('${p.id}');event.stopPropagation()" style="margin-right:4px">Edit</button>
-      ${canDelete(p)?'<button class="btn btn-danger btn-sm" onclick="delP(\''+p.id+'\');event.stopPropagation()">Hapus</button>':''}
+      ${canDelete(p)?('<button class="btn btn-danger btn-sm" onclick="delP(this.dataset.id);event.stopPropagation()" data-id="'+p.id+'">Hapus</button>'):''}
     </td>
   </tr>`;
 }
@@ -1508,7 +1508,8 @@ async function saveProjF(){
   }catch(e){hideLoading();showError('Gagal menyimpan: '+e.message);}
 }
 
-async function delP(id){
+async function delP(idOrEl){
+  const id=typeof idOrEl==='string'?idOrEl:(idOrEl?.dataset?.id||idOrEl);
   const p=allProjects.find(x=>x.id===id);if(!p)return;
   if(!canDelete(p)){alert('Kamu tidak punya izin menghapus project ini.');return;}
   if(!confirm(`Hapus project "${p.name}"?`))return;
@@ -1725,6 +1726,13 @@ async function viewDriveFile(url,name,mime,thumb,driveId){
   }
 }
 
+function vdf(el){
+  const url=decodeURIComponent(el.dataset.url||'');
+  const name=decodeURIComponent(el.dataset.name||'');
+  const mime=decodeURIComponent(el.dataset.mime||'');
+  const id=decodeURIComponent(el.dataset.id||'');
+  viewDriveFile(url,name,mime,'',id);
+}
 function extractDriveId(url){
   // Extract file ID from Google Drive URL
   const m=url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)||url.match(/id=([a-zA-Z0-9_-]+)/);
@@ -1743,7 +1751,7 @@ async function loadUpdateEntries(projectId){
     el.innerHTML=all.map(e=>{
       const isM=e._type==='manual';
       const hasF=e.files&&e.files.length>0;
-      const thumbsHtml=hasF?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${e.files.map(f=>'<div onclick="viewDriveFile(''+( f.url )+'',''+( f.name )+'',''+( f.mime )+'','',''+( f.drive_id||'' )+'')" style="cursor:pointer;border-radius:6px;overflow:hidden;width:60px;height:60px;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center" title="'+( f.name )+'"><span style="font-size:24px">'+( fi(f.mime) )+'</span></div>').join('')}</div>`:'';
+      const thumbsHtml=hasF?('<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">'+e.files.map(function(f){return '<div onclick="vdf(this)" data-url="'+encodeURIComponent(f.url||'')+'" data-name="'+encodeURIComponent(f.name||'')+'" data-mime="'+encodeURIComponent(f.mime||'')+'" data-id="'+encodeURIComponent(f.drive_id||'')+'" style="cursor:pointer;border-radius:6px;overflow:hidden;width:60px;height:60px;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center" title="'+f.name+'"><span style="font-size:24px">'+fi(f.mime)+'</span></div>';}).join('')+'</div>'):'';
       return `<div style="display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);align-items:flex-start">
         <div style="width:7px;height:7px;border-radius:50%;background:${isM?'var(--accent)':'var(--text3)'};margin-top:5px;flex-shrink:0"></div>
         <div style="flex:1">
