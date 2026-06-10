@@ -2000,25 +2000,38 @@ async function saveUpProj(parsed){
 function toggleChat(){document.getElementById('chat-panel').classList.toggle('open');}
 async function sendChat(){const inp=document.getElementById('chat-input'),q=inp.value.trim();if(!q)return;inp.value='';askChat(q);}
 async function askChat(q){
-  const k=getApiKey();const msgs=document.getElementById('chat-msgs');
-  document.getElementById('chat-suggestions').style.display='none';
-  msgs.innerHTML+=`<div class="chat-msg user">${q}</div><div class="chat-msg ai" id="chat-loading">Gemini sedang menjawab...</div>`;
+  const k=getApiKey();
+  const msgs=document.getElementById('chat-msgs');
+  const sugs=document.getElementById('chat-suggestions');
+  if(sugs)sugs.style.display='none';
+
+  // Add user message
+  const userDiv=document.createElement('div');
+  userDiv.className='chat-msg user';
+  userDiv.textContent=q;
+  msgs.appendChild(userDiv);
+
+  // Add loading indicator
+  const loadDiv=document.createElement('div');
+  loadDiv.className='chat-msg ai';
+  loadDiv.textContent='Gemini sedang menjawab...';
+  msgs.appendChild(loadDiv);
   msgs.scrollTop=msgs.scrollHeight;
-  if(!k){const el=document.getElementById('chat-loading');if(el){el.id='';el.textContent='API Key Gemini belum diisi di Pengaturan.';}return;}
+
+  if(!k){loadDiv.textContent='API Key Gemini belum diisi. Masuk ke Pengaturan.';return;}
+
   const myP=projects.filter(p=>p.status!=='Completed');
-  const ctx=`User: ${currentUser?.name} (${currentUser?.role})\nProject aktif: ${myP.length}\nIn Progress: ${myP.filter(p=>p.status==='In Progress').length}\nOverdue: ${myP.filter(p=>od(p)).length}\nDaftar project: ${JSON.stringify(myP.map(p=>({name:p.name,status:p.status,progress:p.progress,due:p.due,prio:p.prio})))}`;
-  // Build conversation history for Gemini
-  chatHist.push({role:'user',parts:[{text:q}]});
-  if(chatHist.length>12)chatHist=chatHist.slice(-12);
-  const systemPrompt=`Kamu AI assistant JAVAFON & JAVACO Project Tracker. Jawab dalam Bahasa Indonesia, ringkas dan actionable. ${ctx}`;
-  const fullPrompt=`${systemPrompt}\n\nPertanyaan: ${q}`;
+  const ctx='User: '+(currentUser?.name||'?')+' ('+(currentUser?.role||'?')+')\nProject aktif: '+myP.length+'\nIn Progress: '+myP.filter(p=>p.status==='In Progress').length+'\nOverdue: '+myP.filter(p=>od(p)).length+'\nDaftar project: '+JSON.stringify(myP.slice(0,10).map(p=>({name:p.name,status:p.status,progress:p.progress,due:p.due})));
+
+  const fullPrompt='Kamu AI assistant JAVAFON & JAVACO Project Tracker. Jawab dalam Bahasa Indonesia, ringkas dan helpful.\n\nData dashboard:\n'+ctx+'\n\nPertanyaan user: '+q;
+
   try{
     const reply=await callGemini(fullPrompt);
-    chatHist.push({role:'model',parts:[{text:reply}]});
-    const el=document.getElementById('chat-loading');if(el){el.id='';el.classList.remove('loading');el.textContent=reply;}
+    // Replace newlines with <br> for display
+    loadDiv.innerHTML=reply.replace(/\n/g,'<br>');
   }catch(e){
-    chatHist.pop(); // remove failed user message
-    const el=document.getElementById('chat-loading');if(el){el.id='';el.classList.remove('loading');el.textContent=`Error: ${e.message}`;}
+    loadDiv.textContent='Error: '+e.message;
+    loadDiv.style.color='var(--red)';
   }
   msgs.scrollTop=msgs.scrollHeight;
 }
