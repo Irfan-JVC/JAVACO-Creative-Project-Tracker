@@ -1882,11 +1882,11 @@ async function callGemini(prompt, systemPrompt, _retry){
     generationConfig:{
       maxOutputTokens:800,
       temperature:0.3,
-      responseMimeType: prompt.includes('BALAS HANYA JSON')?'application/json':'text/plain'
+      responseMimeType:prompt.includes('BALAS HANYA JSON')?'application/json':'text/plain'
     }
   };
-  if(sys){
-    body.system_instruction={parts:[{text:sys}]};
+  if(systemPrompt){
+    body.system_instruction={parts:[{text:systemPrompt}]};
   }
   
   const r=await fetch(
@@ -1992,8 +1992,8 @@ async function runUpAI(){
       if(_s>=0&&_e>_s)_c=_c.substring(_s,_e);
       parsed=JSON.parse(_c);
     }catch(_pe){
-      console.error('Gemini raw response:',rawText.substring(0,400));
-      throw new Error('Format tidak valid: '+_pe.message+'. Raw: '+rawText.substring(0,100));
+      console.error('Gemini raw:',rawText.substring(0,300));
+      throw new Error('Format tidak valid: '+_pe.message);
     }
     res.innerHTML=`<div class="ai-result-title">✦ Gemini Menemukan Project</div>
       <div class="res-row"><span class="res-key">Nama</span><span class="res-val" style="font-weight:700">${parsed.name}</span></div>
