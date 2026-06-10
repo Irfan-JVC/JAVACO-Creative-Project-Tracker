@@ -1896,15 +1896,8 @@ async function callGemini(prompt, systemPrompt){
   if(!r.ok){const e=await r.json();throw new Error('Gemini error '+r.status+': '+(e.error?.message||'Unknown error'));}
   
   const data=await r.json();
-  // Handle gemini-2.5-flash which may have thinking parts
-  const parts=data.candidates?.[0]?.content?.parts||[];
-  let text='';
-  for(const p of parts){if(p.text&&!p.thought){text=p.text;break;}}
-  if(!text)text=parts.map(p=>p.text||'').join('').trim();
-  if(!text){
-    console.error('Gemini response:',JSON.stringify(data).substring(0,200));
-    throw new Error('Gemini tidak merespons. Coba lagi.');
-  }
+  const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+  if(!text)throw new Error('Gemini tidak mengembalikan respons.');
   return text;
 }
 
@@ -1921,8 +1914,22 @@ async function runAI(){
     const prompt=`Kamu adalah AI assistant project tracker JAVAFON & JAVACO Creative Studio. Balas HANYA dengan JSON valid, tanpa teks lain, tanpa markdown backticks. Format: {"status":"<Not Started/In Progress/On Hold/Completed>","progress":<0-100>,"ringkasan":"<1-2 kalimat>","action_items":["<item>"],"catatan":"<atau kosong>"}. Konteks project: ${ctx}. Update dari user: "${inp}"`;
     const rawText=await callGemini(prompt);
     let parsed;
-    try{parsed=JSON.parse(rawText.replace(/`+json|`+/g,'').trim());}
-    catch{throw new Error('Format respons tidak valid. Coba lagi.');}
+    try{
+      // Clean response: remove markdown, find JSON object
+      let clean=rawText;
+      // Remove ```json ... ``` wrapper
+      clean=clean.replace(/```json\s*/gi,'').replace(/```\s*/g,'');
+      // Find JSON object boundaries
+      const jsonStart=clean.indexOf('{');
+      const jsonEnd=clean.lastIndexOf('}')+1;
+      if(jsonStart>=0&&jsonEnd>jsonStart){
+        clean=clean.substring(jsonStart,jsonEnd);
+      }
+      parsed=JSON.parse(clean.trim());
+    }catch(e){
+      console.error('Parse error:',e.message,'Raw:',rawText.substring(0,200));
+      throw new Error('Format respons tidak valid: '+e.message+'. Coba tambah instruksi lebih detail.');
+    }
     const n=ts(),dp=pn||'[Belum dipilih]';
     res.innerHTML=`<div class="ai-result-title">✦ Hasil Generate Gemini AI</div>
       <div class="res-row"><span class="res-key">Project</span><span class="res-val" style="font-weight:700">${dp}</span></div>
@@ -1975,11 +1982,18 @@ async function runUpAI(){
       if(f.isImg){fileTexts.push('[Gambar: '+f.name+']');}
       else{fileTexts.push('[File: '+f.name+']\n'+f.data.substring(0,2000));}
     }
-    const prompt='Kamu adalah AI assistant project tracker JAVAFON & JAVACO. Baca konten file berikut dan identifikasi detail project. '+(extra?'Instruksi: '+extra+'. ':'')+'Kategori tersedia: '+cats+'. Balas HANYA dengan JSON valid tanpa teks lain: {"name":"<nama>","cat":"<kategori>","status":"Not Started","prio":"<Low/Medium/High/Critical>","due":"<YYYY-MM-DD>","notes":"<deskripsi>","action_items":["<item>"],"summary":"<ringkasan>"}\n\nKonten file:\n'+fileTexts.join('\n\n');
+    const prompt='Kamu adalah AI assistant project tracker JAVAFON & JAVACO. Baca konten file berikut dan identifikasi detail project creative design. '+(extra?'Instruksi: '+extra+'. ':'')+'Kategori tersedia: '+cats+'. WAJIB balas HANYA dengan satu JSON object saja, tanpa teks lain, tanpa markdown, tanpa penjelasan: {"name":"<nama project>","cat":"<salah satu kategori>","status":"Not Started","prio":"<Low/Medium/High/Critical>","due":"<YYYY-MM-DD atau kosong>","notes":"<deskripsi singkat>","action_items":["<item>"],"summary":"<ringkasan 1 kalimat>"}\n\nKonten file:\n'+fileTexts.join('\n\n');
     const rawText=await callGemini(prompt);
     let parsed;
-    try{parsed=JSON.parse(rawText.replace(/`+json|`+/g,'').trim());}
-    catch{throw new Error('Format respons tidak valid. Coba lagi.');}
+    try{
+      let clean=rawText.replace(/```json\s*/gi,'').replace(/```\s*/g,'');
+      const s=clean.indexOf('{'),e2=clean.lastIndexOf('}')+1;
+      if(s>=0&&e2>s)clean=clean.substring(s,e2);
+      parsed=JSON.parse(clean.trim());
+    }catch(e){
+      console.error('Parse error:',e.message,'Raw:',rawText.substring(0,200));
+      throw new Error('Format respons tidak valid. Coba lagi.');
+    }
     res.innerHTML=`<div class="ai-result-title">✦ Gemini Menemukan Project</div>
       <div class="res-row"><span class="res-key">Nama</span><span class="res-val" style="font-weight:700">${parsed.name}</span></div>
       <div class="res-row"><span class="res-key">Kategori</span><span class="res-val">${parsed.cat}</span></div>
