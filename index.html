@@ -1944,16 +1944,10 @@ async function runUpAI(){
   try{
     let fileTexts=[];
     for(const f of upFiles){
-      if(f.isImg){fileTexts.push(`[Gambar: ${f.name}]`);}
-      else{fileTexts.push(`[File: ${f.name}]
-${f.data.substring(0,2000)}`);}
+      if(f.isImg){fileTexts.push('[Gambar: '+f.name+']');}
+      else{fileTexts.push('[File: '+f.name+']\n'+f.data.substring(0,2000));}
     }
-    const prompt=`Kamu adalah AI assistant project tracker JAVAFON & JAVACO. Baca konten file berikut dan identifikasi detail project. ${extra?'Instruksi: '+( extra )+'.':''} Kategori tersedia: ${cats}. Balas HANYA dengan JSON valid tanpa teks lain: {"name":"<nama project>","cat":"<pilih dari kategori>","status":"Not Started","prio":"<Low/Medium/High/Critical>","due":"<YYYY-MM-DD atau kosong>","notes":"<deskripsi>","action_items":["<item>"],"summary":"<ringkasan>"}
-
-Konten file:
-${fileTexts.join('
-
-')}`;
+    const prompt='Kamu adalah AI assistant project tracker JAVAFON & JAVACO. Baca konten file berikut dan identifikasi detail project. '+(extra?'Instruksi: '+extra+'. ':'')+'Kategori tersedia: '+cats+'. Balas HANYA dengan JSON valid tanpa teks lain: {"name":"<nama>","cat":"<kategori>","status":"Not Started","prio":"<Low/Medium/High/Critical>","due":"<YYYY-MM-DD>","notes":"<deskripsi>","action_items":["<item>"],"summary":"<ringkasan>"}\n\nKonten file:\n'+fileTexts.join('\n\n');
     const rawText=await callGemini(prompt);
     let parsed;
     try{parsed=JSON.parse(rawText.replace(/`+json|`+/g,'').trim());}
