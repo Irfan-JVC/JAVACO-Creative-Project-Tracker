@@ -1879,7 +1879,8 @@ async function callGemini(prompt, systemPrompt){
   // Gemini uses system_instruction for system prompt
   const body={
     contents:[{role:'user',parts:[{text:prompt}]}],
-    generationConfig:{maxOutputTokens:800,temperature:0.3}
+    generationConfig:{maxOutputTokens:800,temperature:0.3},
+    thinkingConfig:{thinkingBudget:0}
   };
   if(systemPrompt){
     body.system_instruction={parts:[{text:systemPrompt}]};
@@ -1896,8 +1897,14 @@ async function callGemini(prompt, systemPrompt){
   if(!r.ok){const e=await r.json();throw new Error('Gemini error '+r.status+': '+(e.error?.message||'Unknown error'));}
   
   const data=await r.json();
-  const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
-  if(!text)throw new Error('Gemini tidak mengembalikan respons.');
+  // gemini-2.5-flash may have thinking parts - find the text part
+  const parts=data.candidates?.[0]?.content?.parts||[];
+  const textPart=parts.find(p=>p.text&&p.thought!==true);
+  const text=textPart?.text||parts[parts.length-1]?.text||'';
+  if(!text){
+    console.error('Gemini raw response:',JSON.stringify(data).substring(0,300));
+    throw new Error('Gemini tidak mengembalikan teks. Response: '+JSON.stringify(data).substring(0,100));
+  }
   return text;
 }
 
