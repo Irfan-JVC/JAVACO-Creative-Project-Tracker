@@ -1869,7 +1869,7 @@ async function testKey(){
 }
 
 // ═══ GEMINI AI HELPER ═══
-async function callGemini(prompt, systemPrompt){
+async function callGemini(prompt, systemPrompt, _retry){
   const k=getApiKey();
   if(!k)throw new Error('API Key Gemini belum diisi. Masuk ke Pengaturan untuk mengisinya.');
   
@@ -1891,13 +1891,17 @@ async function callGemini(prompt, systemPrompt){
   );
   
   if(r.status===400){const e=await r.json();throw new Error('API Error: '+(e.error?.message||'Request tidak valid'));}
-  if(r.status===403){throw new Error('API Key tidak valid atau tidak punya akses Gemini API.');}
-  if(r.status===429){throw new Error('Terlalu banyak request. Coba lagi dalam beberapa detik.');}
-  if(!r.ok){const e=await r.json();throw new Error('Gemini error '+r.status+': '+(e.error?.message||'Unknown error'));}
+  if(r.status===403){throw new Error('API Key tidak valid atau tidak punya akses.');}
+  if(r.status===429){throw new Error('Terlalu banyak request. Tunggu beberapa detik.');}
+  if(r.status===503||r.status===529){if((_retry||0)<2){await new Promise(r=>setTimeout(r,3000));return callGemini(prompt,systemPrompt,(_retry||0)+1);}throw new Error('Server Gemini sibuk. Coba lagi dalam 1-2 menit.');}
+  if(!r.ok){const e=await r.json();throw new Error('Gemini error '+r.status+': '+(e.error?.message||'Unknown'));}  
   
   const data=await r.json();
-  const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
-  if(!text)throw new Error('Gemini tidak mengembalikan respons.');
+  const _pts=data.candidates?.[0]?.content?.parts||[];
+  let text='';
+  for(const p of _pts){if(p.text&&!p.thought){text=p.text;break;}}
+  if(!text)text=_pts.map(p=>p.text||'').join('').trim();
+  if(!text){console.error('Gemini empty:',JSON.stringify(data).substring(0,150));throw new Error('Gemini tidak merespons. Coba lagi.');}
   return text;
 }
 
@@ -1915,20 +1919,13 @@ async function runAI(){
     const rawText=await callGemini(prompt);
     let parsed;
     try{
-      // Clean response: remove markdown, find JSON object
-      let clean=rawText;
-      // Remove ```json ... ``` wrapper
-      clean=clean.replace(/```json\s*/gi,'').replace(/```\s*/g,'');
-      // Find JSON object boundaries
-      const jsonStart=clean.indexOf('{');
-      const jsonEnd=clean.lastIndexOf('}')+1;
-      if(jsonStart>=0&&jsonEnd>jsonStart){
-        clean=clean.substring(jsonStart,jsonEnd);
-      }
-      parsed=JSON.parse(clean.trim());
-    }catch(e){
-      console.error('Parse error:',e.message,'Raw:',rawText.substring(0,200));
-      throw new Error('Format respons tidak valid: '+e.message+'. Coba tambah instruksi lebih detail.');
+      let _c=rawText.replace(/```json/gi,'').replace(/```/g,'').trim();
+      const _s=_c.indexOf('{'),_e=_c.lastIndexOf('}')+1;
+      if(_s>=0&&_e>_s)_c=_c.substring(_s,_e);
+      parsed=JSON.parse(_c);
+    }catch(_pe){
+      console.error('Gemini raw:',rawText.substring(0,300));
+      throw new Error('Format respons tidak valid: '+_pe.message);
     }
     const n=ts(),dp=pn||'[Belum dipilih]';
     res.innerHTML=`<div class="ai-result-title">✦ Hasil Generate Gemini AI</div>
@@ -1982,18 +1979,11 @@ async function runUpAI(){
       if(f.isImg){fileTexts.push('[Gambar: '+f.name+']');}
       else{fileTexts.push('[File: '+f.name+']\n'+f.data.substring(0,2000));}
     }
-    const prompt='Kamu adalah AI assistant project tracker JAVAFON & JAVACO. Baca konten file berikut dan identifikasi detail project creative design. '+(extra?'Instruksi: '+extra+'. ':'')+'Kategori tersedia: '+cats+'. WAJIB balas HANYA dengan satu JSON object saja, tanpa teks lain, tanpa markdown, tanpa penjelasan: {"name":"<nama project>","cat":"<salah satu kategori>","status":"Not Started","prio":"<Low/Medium/High/Critical>","due":"<YYYY-MM-DD atau kosong>","notes":"<deskripsi singkat>","action_items":["<item>"],"summary":"<ringkasan 1 kalimat>"}\n\nKonten file:\n'+fileTexts.join('\n\n');
+    const prompt='Kamu adalah AI assistant project tracker JAVAFON & JAVACO. Baca konten file berikut dan identifikasi detail project. '+(extra?'Instruksi: '+extra+'. ':'')+'Kategori tersedia: '+cats+'. BALAS HANYA JSON INI TANPA TEKS LAIN: {"name":"<nama>","cat":"<kategori>","status":"Not Started","prio":"<Low/Medium/High/Critical>","due":"<YYYY-MM-DD>","notes":"<deskripsi>","action_items":["<item>"],"summary":"<ringkasan>"}\n\nKonten file:\n'+fileTexts.join('\n\n');
     const rawText=await callGemini(prompt);
     let parsed;
-    try{
-      let clean=rawText.replace(/```json\s*/gi,'').replace(/```\s*/g,'');
-      const s=clean.indexOf('{'),e2=clean.lastIndexOf('}')+1;
-      if(s>=0&&e2>s)clean=clean.substring(s,e2);
-      parsed=JSON.parse(clean.trim());
-    }catch(e){
-      console.error('Parse error:',e.message,'Raw:',rawText.substring(0,200));
-      throw new Error('Format respons tidak valid. Coba lagi.');
-    }
+    try{parsed=JSON.parse(rawText.replace(/`+json|`+/g,'').trim());}
+    catch{throw new Error('Format respons tidak valid. Coba lagi.');}
     res.innerHTML=`<div class="ai-result-title">✦ Gemini Menemukan Project</div>
       <div class="res-row"><span class="res-key">Nama</span><span class="res-val" style="font-weight:700">${parsed.name}</span></div>
       <div class="res-row"><span class="res-key">Kategori</span><span class="res-val">${parsed.cat}</span></div>
